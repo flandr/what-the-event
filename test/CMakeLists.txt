@@ -8,6 +8,7 @@ include_directories(
 )
 
 add_executable(test
+    buffer_test.cc
     driver.cc
     event_base_test.cc
     event_handler_test.cc
