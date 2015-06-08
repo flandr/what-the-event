@@ -21,6 +21,7 @@
  */
 
 #include <thread>
+#include <utility>
 
 #include "event_base_test.h"
 #include "wte/event_base.h"
@@ -71,6 +72,47 @@ TEST_F(EventBaseTest, RegistrationStateChanges) {
     // Idempotence
     base->unregisterHandler(&handler);
     ASSERT_FALSE(handler.registered());
+}
+
+class LimitedReadConsumer final : public EventHandler {
+public:
+    explicit LimitedReadConsumer(int fd, int nbytes) : EventHandler(fd),
+        limit_(nbytes) { }
+    void ready(What event) noexcept override {
+        char buf[64];
+        int nread;
+        while (limit_ > 0) {
+            nread = read(fd(), buf, std::min((int) sizeof(buf), limit_));
+            if (nread <= 0) {
+                break;
+            }
+            limit_ -= nread;
+        }
+
+        if (limit_ == 0) {
+            base()->unregisterHandler(this);
+        }
+    }
+    int limit_;
+};
+
+TEST_F(EventBaseTest, LoopExitsWhenEmpty) {
+    LimitedReadConsumer handler(fds[0], 1000);
+    ASSERT_EQ(1000, handler.limit_);
+    base->registerHandler(&handler, What::READ);
+
+    std::thread t1([this]() { base->loop(EventBase::LoopMode::UNTIL_EMPTY); });
+    ASSERT_TRUE(t1.joinable());
+
+    char buf[100];
+    memset(buf, 'A', sizeof(buf));
+
+    for (int i = 0; i < 10; ++i) {
+        write(fds[1], buf, sizeof(buf));
+    }
+
+    t1.join();
+    ASSERT_EQ(0, handler.limit_);
 }
 
 } // wte namespace

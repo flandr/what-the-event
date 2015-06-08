@@ -64,4 +64,19 @@ TEST_F(EventHandlerTest, ReadEventsPostWhenAvailable) {
     ASSERT_EQ(What::READ, handler.last_event);
 }
 
+TEST_F(EventHandlerTest, UnregisteredEventsNotRaised) {
+    TestEventHandler handler(fds[0]);
+    base->registerHandler(&handler, What::READ);
+
+    char buf[1] = {'A'};
+    ASSERT_EQ(1, write(fds[1], buf, sizeof(buf)));
+
+    handler.unregister();
+
+    // Loop until empty (starts empty)
+    base->loop(EventBase::LoopMode::UNTIL_EMPTY);
+
+    ASSERT_EQ(What::NONE, handler.last_event);
+}
+
 } // wte namespace
