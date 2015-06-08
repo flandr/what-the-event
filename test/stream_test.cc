@@ -20,44 +20,45 @@
  * SOFTWARE.
  */
 
-#ifndef TEST_EVENT_BASE_TEST_H_
-#define TEST_EVENT_BASE_TEST_H_
-
-#include <event2/util.h>
-#include <gtest/gtest.h>
-
-#include "wte/event_base.h"
+#include "event_base_test.h"
+#include "wte/stream.h"
 
 namespace wte {
 
-class EventBaseTest : public ::testing::Test {
+class StreamTest : public EventBaseTest {
 public:
-    EventBaseTest() : base(mkEventBase()) {
-#if defined(_WIN32)
-        int rc = evutil_socketpair(AF_INET, SOCK_STREAM, 0, fds);
-#else
-        int rc = evutil_socketpair(AF_LOCAL, SOCK_STREAM, 0, fds);
-#endif
-        if (-1 == rc) {
-            throw std::runtime_error("Failed to allocate socket pair");
+    class TestWriteCallback final : public Stream::WriteCallback {
+    public:
+        void complete(Stream *) override {
+            completed = true;
         }
-        if (-1 == evutil_make_socket_nonblocking(fds[0])) {
-            throw std::runtime_error("Failed to make socket nonblocking");
+        void error(std::runtime_error const&) override {
+            errored = true;
         }
-        if (-1 == evutil_make_socket_nonblocking(fds[1])) {
-            throw std::runtime_error("Failed to make socket nonblocking");
-        }
-    }
-    ~EventBaseTest() {
-        close(fds[0]);
-        close(fds[1]);
-        delete base;
-    }
-protected:
-    evutil_socket_t fds[2]; // Directly depending on libevent utils
-    EventBase *base;
+        bool completed = false;
+        bool errored = false;
+    };
 };
 
-} // namespace wte
+TEST_F(StreamTest, WritesRaiseCallbackOnCompletion) {
+    TestWriteCallback cb1;
+    TestWriteCallback cb2;
 
-#endif // TEST_EVENT_BASE_TEST_H_
+    std::unique_ptr<Stream> stream(wrapFd(base, fds[0]));
+
+    char buf[64];
+    memset(buf, 'A', sizeof(buf));
+    stream->write(buf, sizeof(buf), &cb1);
+    stream->write(buf, sizeof(buf), &cb2);
+
+    base->loop(EventBase::LoopMode::ONCE);
+
+    ASSERT_TRUE(cb1.completed);
+    ASSERT_TRUE(cb2.completed);
+
+    char read_buf[128];
+    ssize_t nread = read(fds[1], read_buf, sizeof(read_buf));
+    ASSERT_EQ(128, nread);
+}
+
+} // wte namespace

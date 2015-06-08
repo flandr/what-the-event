@@ -41,6 +41,16 @@ inline bool isWrite(What what) {
     return what == What::WRITE || what == What::READ_WRITE;
 }
 
+/** @return `what` | WRITE. */
+inline What ensureWrite(What what) {
+    switch (what) {
+    case What::READ:
+        return What::READ_WRITE;
+    default:
+        return What::WRITE;
+    }
+}
+
 } // wte namespace
 
 #endif // WTE_WHAT_H_

@@ -18,6 +18,7 @@ set(libwte_SRCS
     event_handler.cc
     libevent_event_base.cc
     libevent_event_handler.cc
+    stream.cc
 )
 
 # Set the include directories
