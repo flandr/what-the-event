@@ -21,7 +21,11 @@
 #ifndef WTE_EVENT_BASE_H_
 #define WTE_EVENT_BASE_H_
 
+#include "wte/what.h"
+
 namespace wte {
+
+class EventHandler;
 
 class EventBase {
 public:
@@ -48,6 +52,19 @@ public:
      * This method can safely be invoked from any thread.
      */
     virtual void stop() = 0;
+
+    /**
+     * Register an event handler on this base.
+     *
+     * If the handler is already registered on this base, updates the
+     * events that it will handle.
+     *
+     * The handler must not be registered on another base.
+     */
+    virtual void registerHandler(EventHandler *handler, What events) = 0;
+
+    /** Unregister the event handler. */
+    virtual void unregisterHandler(EventHandler *handler) = 0;
 
     virtual ~EventBase() { }
 };

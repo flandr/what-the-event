@@ -20,57 +20,48 @@
  * SOFTWARE.
  */
 
-#include <thread>
-
 #include "event_base_test.h"
-#include "wte/event_base.h"
 #include "wte/event_handler.h"
 
 namespace wte {
 
-TEST_F(EventBaseTest, StopTerminatesLoop) {
-    // loop() waits for active events, of which there are none by default
-    std::thread loop([this]() { base->loop(EventBase::LoopMode::ONCE); });
-    ASSERT_TRUE(loop.joinable());
-    base->stop();
-    loop.join();
-}
-
-class TestEventHandler final : public EventHandler {
+class EventHandlerTest : public EventBaseTest {
 public:
-    explicit TestEventHandler(int fd) : EventHandler(fd),
-        last_event(What::NONE) { }
-    void ready(What event) noexcept override {
-        last_event = event;
-    }
-    What last_event;
+    class TestEventHandler final : public EventHandler {
+    public:
+        explicit TestEventHandler(int fd) : EventHandler(fd),
+            last_event(What::NONE) { }
+        void ready(What event) noexcept override {
+            last_event = event;
+        }
+        What last_event;
+    };
 };
 
-TEST_F(EventBaseTest, RegistrationStateChanges) {
+TEST_F(EventHandlerTest, WriteEventsPostImmediately) {
     TestEventHandler handler(fds[0]);
-    ASSERT_FALSE(handler.registered());
-
-    // Registration
-    base->registerHandler(&handler, What::READ);
-    ASSERT_TRUE(handler.registered());
-    ASSERT_EQ(What::READ, handler.watched());
-
-    // Idempotence
-    base->registerHandler(&handler, What::READ);
-    ASSERT_EQ(What::READ, handler.watched());
-
-    // Re-registration
     base->registerHandler(&handler, What::WRITE);
-    ASSERT_EQ(What::WRITE, handler.watched());
+    ASSERT_EQ(What::NONE, handler.last_event);
 
-    // Unregistration
-    base->unregisterHandler(&handler);
-    ASSERT_FALSE(handler.registered());
-    ASSERT_EQ(What::NONE, handler.watched());
+    // Loop once
+    base->loop(EventBase::LoopMode::ONCE);
 
-    // Idempotence
-    base->unregisterHandler(&handler);
-    ASSERT_FALSE(handler.registered());
+    // Writeable event fired
+    ASSERT_EQ(What::WRITE, handler.last_event);
+}
+
+TEST_F(EventHandlerTest, ReadEventsPostWhenAvailable) {
+    TestEventHandler handler(fds[0]);
+    base->registerHandler(&handler, What::READ);
+
+    char buf[1] = {'A'};
+    ASSERT_EQ(1, write(fds[1], buf, sizeof(buf)));
+
+    // Loop once
+    base->loop(EventBase::LoopMode::ONCE);
+
+    // Readable event fired
+    ASSERT_EQ(What::READ, handler.last_event);
 }
 
 } // wte namespace

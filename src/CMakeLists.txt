@@ -14,7 +14,9 @@ set(WhatTheEvent_SHARED_LIBRARY
 
 # Source translation units
 set(libwte_SRCS
+    event_handler.cc
     libevent_event_base.cc
+    libevent_event_handler.cc
 )
 
 # Set the include directories

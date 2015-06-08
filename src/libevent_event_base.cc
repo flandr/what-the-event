@@ -22,10 +22,14 @@
 #include <event2/event_struct.h>
 #include <event2/thread.h>
 
+#include <cassert>
 #include <condition_variable>
 #include <mutex>
 
+#include "event_handler_impl.h"
+#include "libevent_event_handler.h"
 #include "wte/event_base.h"
+#include "wte/event_handler.h"
 
 namespace wte {
 
@@ -36,6 +40,8 @@ public:
 
     void loop(LoopMode mode) override;
     void stop() override;
+    void registerHandler(EventHandler*, What) override;
+    void unregisterHandler(EventHandler*) override;
 private:
     event_base *base_;
     std::atomic<bool> terminate_;
@@ -62,7 +68,25 @@ LibeventEventBase::~LibeventEventBase() {
 
 namespace {
 void persistentTimerCb(evutil_socket_t, int16_t, void*) { }
+
+int toFlags(What what) {
+    switch (what) {
+    case What::NONE:
+        return 0;
+    case What::READ:
+        return EV_READ;
+    case What::WRITE:
+        return EV_WRITE;
+    case What::READ_WRITE:
+        return EV_READ | EV_WRITE;
+    }
 }
+
+void libeventCallback(evutil_socket_t fd, int16_t flags, void *ctx) {
+    reinterpret_cast<EventHandler*>(ctx)->ready(fromFlags(flags));
+}
+
+} // unnamed namespace
 
 void LibeventEventBase::loop(LoopMode mode) {
     struct event persistent_timer;
@@ -118,6 +142,54 @@ void LibeventEventBase::stop() {
         std::unique_lock<std::mutex> lock(await_.mutex);
         await_.cv.wait(lock, [this]() { return await_.finished; });
     }
+}
+
+void LibeventEventBase::unregisterHandler(EventHandler *handler) {
+    if (!handler->base()) {
+        return;
+    }
+
+    assert(handler->base() == this);
+
+    LibeventEventHandler *impl = reinterpret_cast<LibeventEventHandler*>(
+        EventHandlerImpl::get(handler));
+
+    if (!impl || !impl->registered()) {
+        return;
+    }
+
+    event_del(&impl->event_);
+    impl->registered_ = false;
+}
+
+void LibeventEventBase::registerHandler(EventHandler *handler, What what) {
+    if (handler->base()) {
+        assert(handler->base() == this);
+        if (what == EventHandlerImpl::get(handler)->watched()) {
+            // No change
+            return;
+        }
+    }
+
+    LibeventEventHandler *impl = reinterpret_cast<LibeventEventHandler*>(
+        EventHandlerImpl::get(handler));
+
+    if (impl && impl->registered()) {
+        // Need to peel off the existing event to update its flags
+        event_del(&impl->event_);
+    }
+
+    if (!impl) {
+        impl = new LibeventEventHandler(this);
+        EventHandlerImpl::set(handler, impl);
+    }
+
+    event_assign(&impl->event_, base_, handler->fd(), toFlags(what),
+        libeventCallback, handler);
+
+    impl->registered_ = true;
+
+    event_add(&impl->event_, /*timeout=*/ nullptr);
 }
 
 EventBase* mkEventBase() {

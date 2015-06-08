@@ -10,6 +10,7 @@ include_directories(
 add_executable(test
     driver.cc
     event_base_test.cc
+    event_handler_test.cc
 )
 
 target_link_libraries(test
