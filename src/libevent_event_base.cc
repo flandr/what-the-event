@@ -1,0 +1,127 @@
+/*
+ * Copyright (©) 2015 Nate Rosenblum
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+#include <event2/event.h>
+#include <event2/event_struct.h>
+#include <event2/thread.h>
+
+#include <condition_variable>
+#include <mutex>
+
+#include "wte/event_base.h"
+
+namespace wte {
+
+class LibeventEventBase final : public EventBase {
+public:
+    LibeventEventBase();
+    ~LibeventEventBase();
+
+    void loop(LoopMode mode) override;
+    void stop() override;
+private:
+    event_base *base_;
+    std::atomic<bool> terminate_;
+
+    struct {
+        std::mutex mutex;
+        std::condition_variable cv;
+        bool finished = false;
+    } await_;
+};
+
+LibeventEventBase::LibeventEventBase() : base_(event_base_new()) {
+    // TODO: lock-free event loop
+#ifdef _WIN32
+    evthread_use_windows_threads();
+#else
+    evthread_use_pthreads();
+#endif
+}
+
+LibeventEventBase::~LibeventEventBase() {
+    event_base_free(base_);
+}
+
+namespace {
+void persistentTimerCb(evutil_socket_t, int16_t, void*) { }
+}
+
+void LibeventEventBase::loop(LoopMode mode) {
+    struct event persistent_timer;
+    int rc = 0;
+
+    await_.finished = false;
+    terminate_.store(false, std::memory_order_release);
+
+    while (!terminate_.load(std::memory_order_acquire)) {
+        if (mode == LoopMode::FOREVER) {
+            // Enqueue a persistent event for versions of libevent that
+            // don't support EVLOOP_NO_EXIT_ON_EMPTY
+            static struct timeval tv = { 3600, 0 };
+            event_assign(&persistent_timer, base_, -1, 0, persistentTimerCb,
+                nullptr);
+            if (0 != event_add(&persistent_timer, &tv)) {
+                throw std::runtime_error("Internal error starting loop");
+            }
+        }
+
+        rc = event_base_loop(base_, EVLOOP_ONCE);
+        // event_base_loop can exit prematurely; for example, the Windows
+        // select-based backend may terminate if the network interfaces
+        // become unavailable (select will exit with WSAENETDOWN). We thus
+        // ignore error return values.
+
+        if (mode == LoopMode::ONCE) {
+            break;
+        }
+
+        if (mode == LoopMode::UNTIL_EMPTY && rc == 1) {
+            // rc == 1 means that libevent has no more registered entries
+            break;
+        }
+    }
+
+    if (mode == LoopMode::FOREVER) {
+        event_del(&persistent_timer);
+    }
+
+    {
+        // Notify waiters
+        std::lock_guard<std::mutex> lock(await_.mutex);
+        await_.finished = true;
+        await_.cv.notify_all();
+    }
+}
+
+void LibeventEventBase::stop() {
+    terminate_.store(true, std::memory_order_release);
+    event_base_loopexit(base_, nullptr);
+    {
+        std::unique_lock<std::mutex> lock(await_.mutex);
+        await_.cv.wait(lock, [this]() { return await_.finished; });
+    }
+}
+
+EventBase* mkEventBase() {
+    return new LibeventEventBase();
+}
+
+} // wte namespace
