@@ -49,9 +49,19 @@ public:
         }
     }
     ~EventBaseTest() {
-        close(fds[0]);
-        close(fds[1]);
+        closepipe<0>();
+        closepipe<1>();
         delete base;
+    }
+
+    // Trading additional code emitted for avoiding parameter type screw-ups :P
+    template<int Idx>
+    void closepipe() {
+        if (fds[Idx] == -1) {
+            return;
+        }
+        close(fds[Idx]);
+        fds[Idx] = -1;
     }
 protected:
     evutil_socket_t fds[2]; // Directly depending on libevent utils

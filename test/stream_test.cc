@@ -63,4 +63,20 @@ TEST_F(StreamTest, WritesRaiseCallbackOnCompletion) {
     ASSERT_EQ(128, nread);
 }
 
+TEST_F(StreamTest, WriteErrorsRaiseCallback) {
+    TestWriteCallback cb;
+    std::unique_ptr<Stream> stream(wrapFd(base, fds[0]));
+
+    char buf[64];
+    memset(buf, 'A', sizeof(buf));
+
+    // Close the other end of the pipe
+    closepipe<1>();
+
+    stream->write(buf, sizeof(buf), &cb);
+    base->loop(EventBase::LoopMode::ONCE);
+    ASSERT_FALSE(cb.completed);
+    ASSERT_TRUE(cb.errored);
+}
+
 } // wte namespace

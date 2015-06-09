@@ -22,7 +22,16 @@
 
 #include <gtest/gtest.h>
 
+#if !defined(_WIN32)
+#include <signal.h>
+#endif
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
+
+#if !defined(_WIN32)
+    signal(SIGPIPE, SIG_IGN);
+#endif
+
     return RUN_ALL_TESTS();
 }
