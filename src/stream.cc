@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 #include <cassert>
+#include <limits>
 
 #include "wte/buffer.h"
 #include "wte/event_base.h"

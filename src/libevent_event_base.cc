@@ -22,6 +22,7 @@
 #include <event2/event_struct.h>
 #include <event2/thread.h>
 
+#include <atomic>
 #include <cassert>
 #include <condition_variable>
 #include <mutex>

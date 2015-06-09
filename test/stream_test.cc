@@ -20,6 +20,8 @@
  * SOFTWARE.
  */
 
+#include <memory>
+
 #include "event_base_test.h"
 #include "wte/stream.h"
 
