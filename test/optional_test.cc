@@ -48,10 +48,10 @@ TEST(OptionalTest, EmptyOptionalThrows) {
     ASSERT_THROW({empty.value();}, std::logic_error);
 }
 
-TEST(OptionalTest, SourceEmptyAfterMoveConstruction) {
+TEST(OptionalTest, SourceNotEmptyAfterMoveConstruction) {
     Optional<int> source(1);
     Optional<int> target(std::move(source));
-    ASSERT_FALSE(source);
+    ASSERT_TRUE(source);
     ASSERT_TRUE(target);
     ASSERT_EQ(1, target.value());
 }

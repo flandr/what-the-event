@@ -122,7 +122,6 @@ template<typename T>
 Optional<T>::Optional(Optional<T> && o) {
     if (o.engaged_) {
         construct(std::move(o.value_.value));
-        o.clear();
     } else {
         engaged_ = false;
     }
