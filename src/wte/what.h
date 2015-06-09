@@ -61,6 +61,16 @@ inline What ensureRead(What what) {
     }
 }
 
+inline What removeWrite(What what) {
+    switch (what) {
+        case What::READ_WRITE:
+        case What::READ:
+            return What::READ;
+        default:
+            return What::NONE;
+    }
+}
+
 } // wte namespace
 
 #endif // WTE_WHAT_H_

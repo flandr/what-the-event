@@ -172,6 +172,11 @@ void LibeventEventBase::registerHandler(EventHandler *handler, What what) {
         }
     }
 
+    if (what == What::NONE) {
+        unregisterHandler(handler);
+        return;
+    }
+
     LibeventEventHandler *impl = reinterpret_cast<LibeventEventHandler*>(
         EventHandlerImpl::get(handler));
 

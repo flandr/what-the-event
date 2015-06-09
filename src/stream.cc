@@ -219,6 +219,11 @@ void StreamImpl::writeHelper() {
         // TODO: better errors
         req->callback_->error(std::runtime_error("Write failed"));
     }
+
+    if (!req) {
+        // Uninstall write handler
+        base_->registerHandler(&handler_, removeWrite(handler_.watched()));
+    }
 }
 
 Stream* wrapFd(EventBase *base, int fd) {

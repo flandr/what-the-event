@@ -72,7 +72,9 @@ TEST_F(StreamTest, WritesRaiseCallbackOnCompletion) {
     stream->write(buf, sizeof(buf), &cb1);
     stream->write(buf, sizeof(buf), &cb2);
 
-    base->loop(EventBase::LoopMode::ONCE);
+    // Using "UNTIL_EMPTY" to verify that write handlers are unregistered
+    // upon completion of the write.
+    base->loop(EventBase::LoopMode::UNTIL_EMPTY);
 
     ASSERT_TRUE(cb1.completed);
     ASSERT_TRUE(cb2.completed);
