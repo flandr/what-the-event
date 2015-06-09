@@ -40,6 +40,25 @@ public:
         bool completed = false;
         bool errored = false;
     };
+
+    class TestReadCallback final : public Stream::ReadCallback {
+    public:
+        void available(const char *, size_t size) override {
+            total_read += size;
+        }
+
+        void eof() override {
+            hit_eof = true;
+        }
+
+        void error(std::runtime_error const&) override {
+            errored = true;
+        }
+
+        size_t total_read = 0;
+        bool hit_eof = false;
+        bool errored = false;
+    };
 };
 
 TEST_F(StreamTest, WritesRaiseCallbackOnCompletion) {
@@ -75,8 +94,28 @@ TEST_F(StreamTest, WriteErrorsRaiseCallback) {
 
     stream->write(buf, sizeof(buf), &cb);
     base->loop(EventBase::LoopMode::ONCE);
+    base->loop(EventBase::LoopMode::ONCE);
     ASSERT_FALSE(cb.completed);
     ASSERT_TRUE(cb.errored);
+}
+
+TEST_F(StreamTest, ReadableDataRaisesCallback) {
+    TestWriteCallback wcb;
+    TestReadCallback rcb;
+
+    std::unique_ptr<Stream> wstream(wrapFd(base, fds[0]));
+    std::unique_ptr<Stream> rstream(wrapFd(base, fds[1]));
+
+    wstream->write("ping", 4, &wcb);
+    rstream->startRead(&rcb);
+
+    base->loop(EventBase::LoopMode::ONCE);
+    base->loop(EventBase::LoopMode::ONCE);
+
+    ASSERT_TRUE(wcb.completed);
+    ASSERT_FALSE(rcb.errored);
+    ASSERT_EQ(4, rcb.total_read);
+    // TODO: close & assert eof
 }
 
 } // wte namespace

@@ -54,6 +54,12 @@ public:
          * TODO: consider peekable methods for copy-avoidance.
          */
         virtual void available(const char *, size_t) = 0;
+
+        /** Invoked when an error occurs on the channel. */
+        virtual void error(std::runtime_error const&) = 0;
+
+        /** Invoked when the stream has been closed on the other side. */
+        virtual void eof() = 0;
     };
 
     /**

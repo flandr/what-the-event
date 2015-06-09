@@ -20,6 +20,7 @@
 
 #include "wte/stream.h"
 
+#include <errno.h>
 #include <unistd.h>
 
 #include <cassert>
@@ -35,14 +36,15 @@ class StreamImpl final : public Stream {
 public:
     // TODO: temporary fd-based constructor for testing
     StreamImpl(EventBase *base, int fd) : handler_(this, fd),
-        base_(base), requests_{nullptr, nullptr} { }
+        base_(base), requests_{nullptr, nullptr}, readCallback_(nullptr) { }
     ~StreamImpl();
 
     void write(const char *buf, size_t size, WriteCallback *cb) override;
-    void startRead(ReadCallback *cb) override { }
-    void stopRead() override { }
+    void startRead(ReadCallback *cb) override;
+    void stopRead() override;
 private:
     void writeHelper();
+    void readHelper();
 
     class SockHandler final : public EventHandler {
     public:
@@ -92,6 +94,7 @@ private:
             return head;
         }
     } requests_;
+    ReadCallback *readCallback_;
 };
 
 void StreamImpl::SockHandler::ready(What event) noexcept {
@@ -99,7 +102,9 @@ void StreamImpl::SockHandler::ready(What event) noexcept {
         stream_->writeHelper();
     }
 
-    // TODO: reads
+   if (isRead(event)) {
+       stream_->readHelper();
+   }
 }
 
 StreamImpl::WriteRequest::WriteRequest(const char *buffer, size_t size,
@@ -108,6 +113,30 @@ StreamImpl::WriteRequest::WriteRequest(const char *buffer, size_t size,
 }
 
 StreamImpl::WriteRequest::~WriteRequest() { }
+
+void StreamImpl::startRead(Stream::ReadCallback *cb) {
+    if (readCallback_ == cb) {
+        return;
+    }
+    readCallback_ = cb;
+    base_->registerHandler(&handler_, ensureRead(handler_.watched()));
+}
+
+void StreamImpl::stopRead() {
+    if (!readCallback_) {
+        return;
+    }
+
+    readCallback_ = nullptr;
+
+    What events = handler_.watched();
+    if (!isRead(handler_.watched())) {
+        return;
+    } else if (isWrite(handler_.watched())) {
+        assert(events == What::READ_WRITE);
+        base_->registerHandler(&handler_, What::WRITE);
+    }
+}
 
 void StreamImpl::write(const char *buf, size_t size, WriteCallback *cb) {
     // TODO: try writing immediately, saving a loop iteration if the socket
@@ -121,6 +150,30 @@ StreamImpl::~StreamImpl() {
     WriteRequest *r;
     // Delete all outstanding write requests
     while ((r = requests_.consumeFront()) != nullptr) { }
+}
+
+void StreamImpl::readHelper() {
+    char buf[4096];
+
+    // TODO: consider not reading indefinitely
+    for (;;) {
+        ssize_t nread = ::read(handler_.fd(), buf, sizeof(buf));
+        if (nread < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                break;
+            }
+            // TODO: better errors
+            readCallback_->error(std::runtime_error("Read failed"));
+            break;
+        } else if (nread == 0) {
+            readCallback_->eof();
+            break;
+        }
+        readCallback_->available(buf, nread);
+        if (nread < sizeof(buf)) {
+            break;
+        }
+    }
 }
 
 void StreamImpl::writeHelper() {
