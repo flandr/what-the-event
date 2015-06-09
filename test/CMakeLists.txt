@@ -8,6 +8,7 @@ include_directories(
 )
 
 add_executable(test
+    blocking_stream_test.cc
     buffer_test.cc
     driver.cc
     connection_listener_test.cc

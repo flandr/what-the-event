@@ -14,6 +14,7 @@ set(WhatTheEvent_SHARED_LIBRARY
 
 # Source translation units
 set(libwte_SRCS
+    blocking_stream.cc
     buffer.cc
     event_handler.cc
     libevent_connection_listener.cc
