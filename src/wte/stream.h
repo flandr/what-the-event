@@ -90,6 +90,13 @@ public:
      * No read callbacks will fire after this method returns.
      */
     virtual void stopRead() = 0;
+
+    /**
+     * Closes the stream.
+     *
+     * Invokes the eof callback if a read callback is registered.
+     */
+    virtual void close() = 0;
 };
 
 // TODO: temporary interface for testing. Must already be connected & set

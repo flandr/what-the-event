@@ -117,7 +117,17 @@ TEST_F(StreamTest, ReadableDataRaisesCallback) {
     ASSERT_TRUE(wcb.completed);
     ASSERT_FALSE(rcb.errored);
     ASSERT_EQ(4, rcb.total_read);
-    // TODO: close & assert eof
+}
+
+TEST_F(StreamTest, CloseRaisesEofCallback) {
+    TestReadCallback rcb;
+    std::unique_ptr<Stream> rstream(wrapFd(base, fds[1]));
+    rstream->startRead(&rcb);
+    rstream->close();
+    ASSERT_TRUE(rcb.hit_eof);
+
+    // prevent double-close
+    fds[1] = -1;
 }
 
 } // wte namespace

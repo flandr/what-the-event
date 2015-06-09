@@ -42,6 +42,7 @@ public:
     void write(const char *buf, size_t size, WriteCallback *cb) override;
     void startRead(ReadCallback *cb) override;
     void stopRead() override;
+    void close() override;
 private:
     void writeHelper();
     void readHelper();
@@ -144,6 +145,16 @@ void StreamImpl::write(const char *buf, size_t size, WriteCallback *cb) {
     WriteRequest *req = new WriteRequest(buf, size, cb);
     requests_.append(req);
     base_->registerHandler(&handler_, ensureWrite(handler_.watched()));
+}
+
+void StreamImpl::close() {
+    if (readCallback_) {
+        readCallback_->eof();
+    }
+    if (handler_.registered()) {
+        handler_.unregister();
+    }
+    ::close(handler_.fd());
 }
 
 StreamImpl::~StreamImpl() {
