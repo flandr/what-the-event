@@ -15,6 +15,7 @@ add_executable(test
     event_handler_test.cc
     stream_test.cc
     test_util.cc
+    optional_test.cc
 )
 
 target_link_libraries(test
