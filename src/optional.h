@@ -49,7 +49,7 @@ union optional_storage {
  * TS N3848 (http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3848.html).
  *
  * See also http://en.cppreference.com/w/cpp/experimental/optional/optional.
- * However, only the good parts :) and won't save you from sill things like
+ * However, only the good parts :) and won't save you from silly things like
  * trying to use it with a reference type.
  *
  * Doesn't try to implement the constexpr constructors, which are severely
@@ -70,6 +70,18 @@ public:
     template<typename... U>
     static Optional<T> make(U && ...u) {
         return Optional<T>(T(std::forward<U>(u)...));
+    }
+
+    Optional& operator=(Optional const& o) {
+        if (!engaged_ && !o.engaged_) {
+            return *this;
+        } else if (engaged_ && !o.engaged_) {
+            clear();
+            return *this;
+        }
+        value_.value = o.value_.value;
+        engaged_ = true;
+        return *this;
     }
 
     ~Optional() {

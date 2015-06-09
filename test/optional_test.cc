@@ -56,4 +56,18 @@ TEST(OptionalTest, SourceEmptyAfterMoveConstruction) {
     ASSERT_EQ(1, target.value());
 }
 
+TEST(OptionalTest, AssignmentOperator) {
+    Optional<int> empty_target;
+    Optional<int> source(1);
+
+    ASSERT_FALSE(empty_target);
+    empty_target = source;
+    ASSERT_TRUE(empty_target);
+    ASSERT_EQ(1, empty_target.value());
+
+    Optional<int> full_target(2);
+    full_target = source;
+    ASSERT_EQ(1, full_target.value());
+}
+
 } // wte namespace
