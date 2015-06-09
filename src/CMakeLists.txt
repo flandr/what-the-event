@@ -16,6 +16,7 @@ set(WhatTheEvent_SHARED_LIBRARY
 set(libwte_SRCS
     buffer.cc
     event_handler.cc
+    libevent_connection_listener.cc
     libevent_event_base.cc
     libevent_event_handler.cc
     stream.cc

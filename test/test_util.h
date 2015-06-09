@@ -1,5 +1,5 @@
 /*
- * Copyright (©) 2015 Nate Rosenblum
+ * Copyright © 2015 Nathan Rosenblum <flander@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -8,6 +8,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -18,50 +20,16 @@
  * SOFTWARE.
  */
 
-#include "wte/event_handler.h"
+#include <functional>
+#include <future>
+#include <memory>
+#include <thread>
+#include <utility>
 
-#include <cassert>
-
-#include "event_handler_impl.h"
-#include "wte/event_base.h"
+#include "wte/connection_listener.h"
 
 namespace wte {
 
-EventHandler::EventHandler(int fd) : fd_(fd), impl_(nullptr) { }
-
-EventHandler::~EventHandler() {
-    delete impl_;
-}
-
-void EventHandler::unregister() {
-    assert(base() != nullptr);
-    base()->unregisterHandler(this);
-}
-
-EventBase* EventHandler::base() {
-    if (!impl_) {
-        return nullptr;
-    }
-    return impl_->base();
-}
-
-bool EventHandler::registered() {
-    if (!impl_) {
-        return false;
-    }
-    return impl_->registered();
-}
-
-What EventHandler::watched() {
-    if (!impl_) {
-        return What::NONE;
-    }
-    return impl_->watched();
-}
-
-void EventHandler::setFd(int fd) {
-    assert(!registered());
-    fd_ = fd;
-}
+int connectOrThrow(ConnectionListener *listener);
 
 } // wte namespace

@@ -10,9 +10,11 @@ include_directories(
 add_executable(test
     buffer_test.cc
     driver.cc
+    connection_listener_test.cc
     event_base_test.cc
     event_handler_test.cc
     stream_test.cc
+    test_util.cc
 )
 
 target_link_libraries(test

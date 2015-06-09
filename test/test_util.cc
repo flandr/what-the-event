@@ -1,5 +1,5 @@
 /*
- * Copyright (©) 2015 Nate Rosenblum
+ * Copyright © 2015 Nathan Rosenblum <flander@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -8,6 +8,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -18,50 +20,40 @@
  * SOFTWARE.
  */
 
-#include "wte/event_handler.h"
+#if !defined(_WIN32)
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#else
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
 
-#include <cassert>
-
-#include "event_handler_impl.h"
-#include "wte/event_base.h"
+#include "test_util.h"
 
 namespace wte {
 
-EventHandler::EventHandler(int fd) : fd_(fd), impl_(nullptr) { }
-
-EventHandler::~EventHandler() {
-    delete impl_;
-}
-
-void EventHandler::unregister() {
-    assert(base() != nullptr);
-    base()->unregisterHandler(this);
-}
-
-EventBase* EventHandler::base() {
-    if (!impl_) {
-        return nullptr;
+int connectOrThrow(ConnectionListener *listener) {
+    struct sockaddr_in saddr;
+    saddr.sin_family = AF_INET;
+    int rc = inet_pton(AF_INET, "127.0.0.1", &saddr.sin_addr);
+    if (-1 == rc) {
+        throw std::runtime_error("fail");
     }
-    return impl_->base();
-}
+    saddr.sin_port = htons(listener->port());
 
-bool EventHandler::registered() {
-    if (!impl_) {
-        return false;
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (-1 == fd) {
+        throw std::runtime_error("fail");
     }
-    return impl_->registered();
-}
 
-What EventHandler::watched() {
-    if (!impl_) {
-        return What::NONE;
+    rc = connect(fd, reinterpret_cast<sockaddr*>(&saddr), sizeof(saddr));
+    if (-1 == rc) {
+        throw std::runtime_error("fail");
     }
-    return impl_->watched();
-}
 
-void EventHandler::setFd(int fd) {
-    assert(!registered());
-    fd_ = fd;
+    return fd;
 }
 
 } // wte namespace

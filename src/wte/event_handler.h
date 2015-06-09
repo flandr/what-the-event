@@ -62,6 +62,12 @@ public:
 
     /** @return the watched file descriptor. */
     int fd() { return fd_; }
+
+    /**
+     * Change the file descriptor. It is an error to change the descriptor
+     * for a registered handler.
+     */
+    void setFd(int fd);
 private:
     int fd_;
     EventHandlerImpl *impl_;
