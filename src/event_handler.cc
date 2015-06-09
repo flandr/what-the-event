@@ -34,8 +34,9 @@ EventHandler::~EventHandler() {
 }
 
 void EventHandler::unregister() {
-    assert(base() != nullptr);
-    base()->unregisterHandler(this);
+    if (base()) {
+        base()->unregisterHandler(this);
+    }
 }
 
 EventBase* EventHandler::base() {

@@ -147,6 +147,7 @@ void StreamImpl::write(const char *buf, size_t size, WriteCallback *cb) {
 }
 
 StreamImpl::~StreamImpl() {
+    handler_.unregister();
     WriteRequest *r;
     // Delete all outstanding write requests
     while ((r = requests_.consumeFront()) != nullptr) { }

@@ -31,6 +31,9 @@ public:
     public:
         explicit TestEventHandler(int fd) : EventHandler(fd),
             last_event(What::NONE) { }
+        ~TestEventHandler() {
+            unregister();
+        }
         void ready(What event) noexcept override {
             last_event = event;
         }

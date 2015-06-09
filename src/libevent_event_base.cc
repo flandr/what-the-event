@@ -190,8 +190,8 @@ void LibeventEventBase::registerHandler(EventHandler *handler, What what) {
         EventHandlerImpl::set(handler, impl);
     }
 
-    event_assign(&impl->event_, base_, handler->fd(), toFlags(what),
-        libeventCallback, handler);
+    event_assign(&impl->event_, base_, handler->fd(),
+        toFlags(what) | EV_PERSIST, libeventCallback, handler);
 
     impl->registered_ = true;
 

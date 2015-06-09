@@ -46,7 +46,7 @@ LibeventConnectionListener::LibeventConnectionListener(EventBase *base,
         errorCallback_(errorCallback), handler_(this, /*fd=*/ -1) { }
 
 LibeventConnectionListener::~LibeventConnectionListener() {
-    // XXX assert stopped?
+    handler_.unregister();
     if (handler_.fd() != -1) {
         close(handler_.fd());
     }
