@@ -47,7 +47,7 @@ install(TARGETS
 install(EXPORT wte-targets DESTINATION lib)
 
 install(DIRECTORY
-    ${CMAKE_SOURCE_DIR}/wte
-    DESTINATION include/wte
+    ${CMAKE_CURRENT_SOURCE_DIR}/wte
+    DESTINATION include
     FILES_MATCHING PATTERN "*.h"
 )
