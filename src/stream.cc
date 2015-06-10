@@ -220,21 +220,25 @@ void StreamImpl::writeHelper() {
             break;
         }
 
+        WriteRequest *next = requests_.consumeFront();
+        if (!next) {
+            // Uninstall the write handler before invoking the callback
+            // for this final request; callbacks that know that they are
+            // last invocation may legitimately do destructive things like
+            // freeing this stream.
+            base_->registerHandler(&handler_, removeWrite(handler_.watched()));
+        }
+
         if (req->callback_) {
             req->callback_->complete(this);
         }
 
-        req = requests_.consumeFront();
+        req = next;
     }
 
     if (failed && req->callback_) {
         // TODO: better errors
         req->callback_->error(std::runtime_error("Write failed"));
-    }
-
-    if (!req) {
-        // Uninstall write handler
-        base_->registerHandler(&handler_, removeWrite(handler_.watched()));
     }
 }
 
