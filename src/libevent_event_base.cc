@@ -54,7 +54,8 @@ private:
     } await_;
 };
 
-LibeventEventBase::LibeventEventBase() : base_(event_base_new()) {
+LibeventEventBase::LibeventEventBase() : base_(event_base_new()),
+        terminate_(false) {
     // TODO: lock-free event loop
 #ifdef _WIN32
     evthread_use_windows_threads();
@@ -94,7 +95,6 @@ void LibeventEventBase::loop(LoopMode mode) {
     int rc = 0;
 
     await_.finished = false;
-    terminate_.store(false, std::memory_order_release);
 
     if (mode == LoopMode::FOREVER) {
         // Enqueue a persistent event for versions of libevent that
@@ -126,8 +126,13 @@ void LibeventEventBase::loop(LoopMode mode) {
     }
 
     if (mode == LoopMode::FOREVER) {
-        event_del(&persistent_timer);
+        if (-1 == event_del(&persistent_timer)) {
+            assert(0);
+        }
     }
+
+    // Reset the termination flag on the way out
+    terminate_.store(false, std::memory_order_release);
 
     {
         // Notify waiters
