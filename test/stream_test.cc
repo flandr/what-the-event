@@ -84,6 +84,28 @@ TEST_F(StreamTest, WritesRaiseCallbackOnCompletion) {
     ASSERT_EQ(128, nread);
 }
 
+TEST_F(StreamTest, LargeWrites) {
+    TestWriteCallback wcb;
+    TestReadCallback rcb;
+
+    std::unique_ptr<Stream> wstream(wrapFd(base, fds[0]));
+    std::unique_ptr<Stream> rstream(wrapFd(base, fds[1]));
+
+    const int kLarge = 1 << 20; // "large"
+    char *wbuf = new char[kLarge];
+    memset(wbuf, 'A', kLarge);
+    wstream->write(wbuf, kLarge, &wcb);
+    rstream->startRead(&rcb);
+
+    while (rcb.total_read < kLarge) {
+        // Have to drive this repeatedly because the pipe has only
+        // so much capacity
+        base->loop(EventBase::LoopMode::ONCE);
+    }
+
+    delete [] wbuf;
+}
+
 TEST_F(StreamTest, WriteErrorsRaiseCallback) {
     TestWriteCallback cb;
     std::unique_ptr<Stream> stream(wrapFd(base, fds[0]));

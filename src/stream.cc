@@ -203,11 +203,11 @@ void StreamImpl::writeHelper() {
         size_t total_written = 0;
         for (auto& extent : extents) {
             ssize_t written = ::write(handler_.fd(), extent.data, extent.size);
-            if (written > 0) {
+            if (written >= 0) {
                 total_written += written;
-            } else if (written == 0) {
-                blocked = true;
-                break;
+                if (written < extent.size) {
+                    blocked = true;
+                }
             } else {
                 failed = true;
                 break;
