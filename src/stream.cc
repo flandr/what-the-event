@@ -175,13 +175,19 @@ void StreamImpl::readHelper() {
                 break;
             }
             // TODO: better errors
-            readCallback_->error(std::runtime_error("Read failed"));
+            if (readCallback_) {
+                readCallback_->error(std::runtime_error("Read failed"));
+            }
             break;
         } else if (nread == 0) {
-            readCallback_->eof();
+            if (readCallback_) {
+                readCallback_->eof();
+            }
             break;
         }
-        readCallback_->available(buf, nread);
+        if (readCallback_) {
+            readCallback_->available(buf, nread);
+        }
         if (nread < sizeof(buf)) {
             break;
         }
