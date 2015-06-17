@@ -14,6 +14,7 @@ add_executable(test
     connection_listener_test.cc
     event_base_test.cc
     event_handler_test.cc
+    mpsc_queue_test.cc
     stream_test.cc
     test_util.cc
     optional_test.cc
