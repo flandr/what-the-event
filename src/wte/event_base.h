@@ -21,6 +21,8 @@
 #ifndef WTE_EVENT_BASE_H_
 #define WTE_EVENT_BASE_H_
 
+#include <functional>
+
 #include "wte/what.h"
 
 namespace wte {
@@ -60,11 +62,38 @@ public:
      * events that it will handle.
      *
      * The handler must not be registered on another base.
+     *
+     * May only be invoked on the even loop thread.
      */
     virtual void registerHandler(EventHandler *handler, What events) = 0;
 
-    /** Unregister the event handler. */
+    /**
+     * Unregister the event handler.
+     *
+     * May only be invoked on the event loop thread.
+     */
     virtual void unregisterHandler(EventHandler *handler) = 0;
+
+    /**
+     * Enqueue an operation to run on this event base.
+     *
+     * This method may be invoked on any thread, including the thread
+     * currently driving this event loop. In the latter case, the operation
+     * is invoked immediately, without enqueuing.
+     *
+     * @return false on error, otherwise true
+     */
+    virtual bool runOnEventLoop(std::function<void(void)> const& op) = 0;
+
+    /**
+     * Enqeue an operation to run on the event base and wait for completion.
+     *
+     * Like `runOnEventLoop`, this executes immediately if invoked from
+     * the event loop thread.
+     *
+     * @return false on error, otherwise true
+     */
+    virtual bool runOnEventLoopAndWait(std::function<void(void)> const& op) = 0;
 
     virtual ~EventBase() { }
 };

@@ -47,7 +47,7 @@ public:
     /**
      * Unregister this event from its base.
      *
-     * Idempotent. May safely be invoked in any thread.
+     * Idempotent. May only be invoked in the event base thread.
      */
     void unregister();
 
