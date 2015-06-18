@@ -22,6 +22,10 @@
 #include <event2/event_struct.h>
 #include <event2/thread.h>
 
+#if !defined(_WIN32)
+#include <pthread.h>
+#endif
+
 #include <atomic>
 #include <cassert>
 #include <condition_variable>
@@ -46,6 +50,11 @@ public:
 private:
     event_base *base_;
     std::atomic<bool> terminate_;
+#if !defined(_WIN32)
+    std::atomic<pthread_t> loopThread_;
+#else
+    std::atomic<HANDLE> loopThread_;
+#endif
 
     struct {
         std::mutex mutex;
@@ -94,6 +103,12 @@ void LibeventEventBase::loop(LoopMode mode) {
     struct event persistent_timer;
     int rc = 0;
 
+#if !defined(_WIN32)
+    loopThread_.store(pthread_self(), std::memory_order_release);
+#else
+    loopThread_.store(GetCurrentThread(), std::memory_order_release);
+#endif
+
     await_.finished = false;
 
     if (mode == LoopMode::FOREVER) {
@@ -133,6 +148,7 @@ void LibeventEventBase::loop(LoopMode mode) {
 
     // Reset the termination flag on the way out
     terminate_.store(false, std::memory_order_release);
+    loopThread_.store(0, std::memory_order_release);
 
     {
         // Notify waiters
