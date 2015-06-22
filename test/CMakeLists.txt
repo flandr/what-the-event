@@ -17,6 +17,7 @@ add_executable(test
     mpsc_queue_test.cc
     stream_test.cc
     test_util.cc
+    timeout_test.cc
     optional_test.cc
 )
 

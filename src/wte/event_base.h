@@ -23,11 +23,14 @@
 
 #include <functional>
 
+#include <sys/time.h>
+
 #include "wte/what.h"
 
 namespace wte {
 
 class EventHandler;
+class Timeout;
 
 class EventBase {
 public:
@@ -94,6 +97,30 @@ public:
      * @return false on error, otherwise true
      */
     virtual bool runOnEventLoopAndWait(std::function<void(void)> const& op) = 0;
+
+    /**
+     * Registers a timeout on this event base.
+     *
+     * If the timeout was already registered, updates the duration.
+     *
+     * This method may only be invoked on the event loop thread.
+     *
+     * @param timeout the timeout
+     * @param duration the duration of the timeout
+     */
+    virtual void registerTimeout(Timeout *timeout,
+        struct timeval *duration) = 0;
+
+    /**
+     * Unregister a timeout.
+     *
+     * Idempotent.
+     *
+     * May only be invoked on the event loop thread.
+     *
+     * @param timeout the timeout
+     */
+    virtual void unregisterTimeout(Timeout *timeout) = 0;
 
     virtual ~EventBase() { }
 };

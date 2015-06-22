@@ -35,8 +35,10 @@
 #include "event_handler_impl.h"
 #include "libevent_event_handler.h"
 #include "mpsc_queue.h"
+#include "timeout_impl.h"
 #include "wte/event_base.h"
 #include "wte/event_handler.h"
+#include "wte/timeout.h"
 
 namespace wte {
 
@@ -53,6 +55,8 @@ public:
     void unregisterHandler(EventHandler*) override;
     bool runOnEventLoop(std::function<void(void)> const& op) override;
     bool runOnEventLoopAndWait(std::function<void(void)> const& op) override;
+    void registerTimeout(Timeout *, struct timeval *duration) override;
+    void unregisterTimeout(Timeout *) override;
 
     class NotifyHandler final : public EventHandler {
     public:
@@ -113,6 +117,19 @@ private:
 };
 
 namespace {
+
+class LibeventTimeout final : public TimeoutImpl {
+public:
+    explicit LibeventTimeout(LibeventEventBase *base) : base_(base) {
+        memset(&event_, 0, sizeof(event_));
+    }
+    EventBase* base() override { return base_; }
+
+    LibeventEventBase *base_ = nullptr;
+    struct event event_;
+    bool registered_ = false;
+};
+
 // Sigh.
 struct NotifyInit {
     int fds[2];
@@ -189,6 +206,10 @@ int toFlags(What what) {
 
 void libeventCallback(evutil_socket_t fd, int16_t flags, void *ctx) {
     reinterpret_cast<EventHandler*>(ctx)->ready(fromFlags(flags));
+}
+
+void libeventTimeout(evutil_socket_t fd, int16_t flags, void *ctx) {
+    reinterpret_cast<Timeout*>(ctx)->expired();
 }
 
 } // unnamed namespace
@@ -413,6 +434,55 @@ void LibeventEventBase::unregisterHandler(EventHandler *handler) {
 
     event_del(&impl->event_);
     impl->registered_ = false;
+}
+
+void LibeventEventBase::registerTimeout(Timeout *timeout,
+        struct timeval *duration) {
+    assert(inLoopThread());
+
+    LibeventTimeout *ltime = nullptr;
+    {
+        auto* impl = TimeoutImpl::get(timeout);
+        if (!impl) {
+            ltime = new LibeventTimeout(this);
+        } else {
+            ltime = reinterpret_cast<LibeventTimeout*>(impl);
+            TimeoutImpl::set(timeout, ltime);
+        }
+    }
+
+    if (ltime->registered_) {
+        event_del(&ltime->event_);
+    }
+
+    // TODO: error checking & throw
+    event_assign(&ltime->event_, base_, -1, 0, libeventTimeout, timeout);
+    event_add(&ltime->event_, duration);
+
+    ltime->registered_ = true;
+}
+
+void LibeventEventBase::unregisterTimeout(Timeout *timeout) {
+    assert(inLoopThread());
+
+    auto* impl = TimeoutImpl::get(timeout);
+    if (!impl) {
+        return;
+    }
+
+    if (!impl->base()) {
+        return;
+    }
+
+    assert(impl->base() == this);
+
+    LibeventTimeout* limpl = reinterpret_cast<LibeventTimeout*>(impl);
+
+    if (!limpl->registered_) {
+        return;
+    }
+    event_del(&limpl->event_);
+    limpl->registered_ = false;
 }
 
 void LibeventEventBase::registerHandler(EventHandler *handler, What what) {
