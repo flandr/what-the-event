@@ -39,7 +39,7 @@ class EchoReadCallback final : public ::wte::Stream::ReadCallback {
 public:
     EchoReadCallback(Connection *conn, EchoWriteCallback *wcb)
         : conn_(conn), wcb_(wcb) { }
-    void available(const char *buf, size_t size) override;
+    void available(wte::Buffer *buf) override;
     void eof() override;
     void error(std::runtime_error const& e) override;
 private:
@@ -72,8 +72,8 @@ void EchoReadCallback::eof() {
     delete conn_;
 }
 
-void EchoReadCallback::available(const char *buf, size_t size) {
-    conn_->stream->write(buf, size, wcb_);
+void EchoReadCallback::available(wte::Buffer *buf) {
+    conn_->stream->write(buf, wcb_);
 }
 
 void EchoReadCallback::error(std::runtime_error const& e) {

@@ -153,10 +153,6 @@ void BufferImpl::append(const char *buf, size_t size) {
     size_ += size;
 }
 
-void BufferImpl::append(BufferImpl &&o) {
-    return append(&o);
-}
-
 void BufferImpl::append(BufferImpl *o) {
     if (o->list_empty()) {
         return;
@@ -190,14 +186,14 @@ void BufferImpl::prepend(const char *buf, size_t size) {
     size_ += size;
 }
 
-void BufferImpl::prepend(BufferImpl &&o) {
-    if (o.list_empty()) {
+void BufferImpl::prepend(BufferImpl *o) {
+    if (o->list_empty()) {
         return;
     }
 
-    listPrepend(&head_, o.head_.next, o.head_.prev);
-    size_ += o.size_;
-    o.reset();
+    listPrepend(&head_, o->head_.next, o->head_.prev);
+    size_ += o->size_;
+    o->reset();
 }
 
 void BufferImpl::reserve(size_t size) {
@@ -270,16 +266,16 @@ void Buffer::append(const char *buf, size_t size) {
     return pImpl_->append(buf, size);
 }
 
-void Buffer::append(Buffer &&buf) {
-    return pImpl_->append(std::move(*buf.pImpl_));
+void Buffer::append(Buffer *buf) {
+    return pImpl_->append(buf->pImpl_);
 }
 
 void Buffer::prepend(const char *buf, size_t size) {
     return pImpl_->prepend(buf, size);
 }
 
-void Buffer::prepend(Buffer &&buf) {
-    return pImpl_->prepend(std::move(*buf.pImpl_));
+void Buffer::prepend(Buffer *buf) {
+    return pImpl_->prepend(buf->pImpl_);
 }
 
 bool Buffer::empty() const {

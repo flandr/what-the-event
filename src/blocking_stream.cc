@@ -66,9 +66,10 @@ public:
 
     ~BlockingReadCallback() { }
 
-    virtual void available(const char *buf, size_t size) override {
-        memcpy(buffer_ + nread_, buf, std::min(size, size_ - nread_));
-        nread_ += size;
+    virtual void available(Buffer *buf) override {
+        size_t nread = 0;
+        buf->read(buffer_ + nread_, size_ - nread_, &nread);
+        nread_ += nread;
     }
 
     virtual void error(std::runtime_error const& e) {

@@ -43,8 +43,9 @@ public:
 
     class TestReadCallback final : public Stream::ReadCallback {
     public:
-        void available(const char *, size_t size) override {
-            total_read += size;
+        void available(Buffer *buf) override {
+            total_read += buf->size();
+            buf->drain(buf->size());
         }
 
         void eof() override {

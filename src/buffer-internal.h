@@ -35,10 +35,9 @@ public:
     ~BufferImpl();
 
     void append(const char *buf, size_t size);
-    void append(BufferImpl &&o);
     void append(BufferImpl *o);
     void prepend(const char *buf, size_t size);
-    void prepend(BufferImpl &&o);
+    void prepend(BufferImpl *o);
 
     // Copy data out, consuming in the process
     void read(char *buf, size_t size, size_t *nread);

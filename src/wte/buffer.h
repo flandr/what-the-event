@@ -71,7 +71,7 @@ public:
      *
      * @param buf the input buffer
      */
-    void append(Buffer &&buffer);
+    void append(Buffer *buffer);
 
     /**
      * Prepends data to the buffer.
@@ -89,7 +89,7 @@ public:
      *
      * @param buf the input buffer
      */
-    void prepend(Buffer &&buffer);
+    void prepend(Buffer *buffer);
 
     /**
      * Copy data out of the buffer, consuming it.

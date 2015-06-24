@@ -40,6 +40,7 @@ public:
     ~StreamImpl();
 
     void write(const char *buf, size_t size, WriteCallback *cb) override;
+    void write(Buffer *buf, WriteCallback *cb) override;
     void startRead(ReadCallback *cb) override;
     void stopRead() override;
     void close() override;
@@ -60,6 +61,7 @@ private:
     class WriteRequest {
     public:
         WriteRequest(const char *buffer, size_t size, WriteCallback *cb);
+        WriteRequest(Buffer *buf, WriteCallback *cb);
         ~WriteRequest();
         Buffer buffer_;
         WriteCallback *callback_;
@@ -96,6 +98,7 @@ private:
         }
     } requests_;
     ReadCallback *readCallback_;
+    Buffer readBuffer_;
 };
 
 void StreamImpl::SockHandler::ready(What event) noexcept {
@@ -111,6 +114,11 @@ void StreamImpl::SockHandler::ready(What event) noexcept {
 StreamImpl::WriteRequest::WriteRequest(const char *buffer, size_t size,
         WriteCallback *cb) : callback_(cb), next_(nullptr) {
     buffer_.append(buffer, size);
+}
+
+StreamImpl::WriteRequest::WriteRequest(Buffer *buffer, WriteCallback *cb)
+        : callback_(cb), next_(nullptr) {
+    buffer_.append(buffer);
 }
 
 StreamImpl::WriteRequest::~WriteRequest() { }
@@ -143,6 +151,12 @@ void StreamImpl::write(const char *buf, size_t size, WriteCallback *cb) {
     // TODO: try writing immediately, saving a loop iteration if the socket
     // can handle the entire write w/o blocking
     WriteRequest *req = new WriteRequest(buf, size, cb);
+    requests_.append(req);
+    base_->registerHandler(&handler_, ensureWrite(handler_.watched()));
+}
+
+void StreamImpl::write(Buffer *buf, WriteCallback *cb) {
+    WriteRequest *req = new WriteRequest(buf, cb);
     requests_.append(req);
     base_->registerHandler(&handler_, ensureWrite(handler_.watched()));
 }
@@ -185,8 +199,13 @@ void StreamImpl::readHelper() {
             }
             break;
         }
+
+        // TODO: a reserve + get readable iovec + readv will be more efficient
+        // than a read + append.
+        readBuffer_.append(buf, nread);
+
         if (readCallback_) {
-            readCallback_->available(buf, nread);
+            readCallback_->available(&readBuffer_);
         }
         if (nread < sizeof(buf)) {
             break;

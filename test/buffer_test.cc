@@ -71,7 +71,7 @@ TEST(BufferTest, TestAppend) {
 TEST(BufferTest, TestAppendBuffer) {
     Buffer buf = mkBuffer();
     Buffer buf2 = mkBuffer("foo");
-    buf.append(std::move(buf2));
+    buf.append(&buf2);
     ASSERT_FALSE(buf.empty());
     ASSERT_TRUE(buf2.empty());
     ASSERT_EQ("foo", contents(buf));
@@ -89,7 +89,7 @@ TEST(BufferTest, TestPrepend) {
 TEST(BufferTest, TestPrependBuffer) {
     Buffer buf = mkBuffer("bar");
     Buffer buf2 = mkBuffer("foo");
-    buf.prepend(std::move(buf2));
+    buf.prepend(&buf2);
     ASSERT_EQ("foobar", contents(buf));
 }
 

@@ -25,6 +25,7 @@
 #include <functional>
 
 #include "wte/event_base.h"
+#include "wte/buffer.h"
 
 namespace wte {
 
@@ -50,10 +51,13 @@ public:
         /**
          * Invoked when new data are available for reading.
          *
-         * The stream assumes that the data are consumed by this method.
-         * TODO: consider peekable methods for copy-avoidance.
+         * The stream assumes that the data are consumed by this method; i.e.,
+         * the callback is _edge triggered_ and will not fire again if the
+         * callback fails to consume data.
+         *
+         * @param buffer the available data buffer
          */
-        virtual void available(const char *, size_t) = 0;
+        virtual void available(Buffer *buffer) = 0;
 
         /** Invoked when an error occurs on the channel. */
         virtual void error(std::runtime_error const&) = 0;
@@ -74,6 +78,18 @@ public:
      * @param cb the callback (nullable)
      */
     virtual void write(const char *buf, size_t size, WriteCallback *cb) = 0;
+
+    /**
+     * Write a block of data to the stream, with an optional callback
+     * to handle success or failure notification.
+     *
+     * It is the caller's responsibility to ensure that the write callback
+     * (if provided) remains live until it is invoked or the stream is closed.
+     *
+     * @param buf the buffer
+     * @param cb the callback (nullable)
+     */
+    virtual void write(Buffer *buf, WriteCallback *cb) = 0;
 
     /**
      * Starts reading on the stream.
