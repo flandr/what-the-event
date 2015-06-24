@@ -18,6 +18,7 @@
  * SOFTWARE.
  */
 
+#include <string.h>
 #include <unistd.h>
 
 #if !defined(_WIN32)
