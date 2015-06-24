@@ -245,6 +245,8 @@ void StreamImpl::writeHelper() {
             break;
         }
 
+        WriteCallback *cb = req->callback_;
+        // Must not touch req after this call
         WriteRequest *next = requests_.consumeFront();
         if (!next) {
             // Uninstall the write handler before invoking the callback
@@ -254,8 +256,8 @@ void StreamImpl::writeHelper() {
             base_->registerHandler(&handler_, removeWrite(handler_.watched()));
         }
 
-        if (req->callback_) {
-            req->callback_->complete(this);
+        if (cb) {
+            cb->complete(this);
         }
 
         req = next;
