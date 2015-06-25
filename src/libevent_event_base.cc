@@ -251,7 +251,7 @@ void LibeventEventBase::loop(LoopMode mode) {
         }
     }
 
-    while (!terminate_.load(std::memory_order_acquire)) {
+    do {
         // Always run ops in the notification queue
         runOpsInQueue();
 
@@ -269,7 +269,7 @@ void LibeventEventBase::loop(LoopMode mode) {
             // rc == 1 means that libevent has no more registered entries
             break;
         }
-    }
+    } while (!terminate_.load(std::memory_order_acquire));
 
     if (mode == LoopMode::FOREVER) {
         if (-1 == event_del(&persistent_timer)) {
