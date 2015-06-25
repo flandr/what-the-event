@@ -446,9 +446,9 @@ void LibeventEventBase::registerTimeout(Timeout *timeout,
         auto* impl = TimeoutImpl::get(timeout);
         if (!impl) {
             ltime = new LibeventTimeout(this);
+            TimeoutImpl::set(timeout, ltime);
         } else {
             ltime = reinterpret_cast<LibeventTimeout*>(impl);
-            TimeoutImpl::set(timeout, ltime);
         }
     }
 

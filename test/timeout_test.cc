@@ -50,4 +50,14 @@ TEST_F(TimeoutTest, TimeoutsFireOnce) {
     ASSERT_EQ(1, timeout.count);
 }
 
+TEST_F(TimeoutTest, UnregisteredTimeoutsDoNotFire) {
+    struct timeval tv { 0, 1000 };
+    TestTimeout timeout;
+    base->registerTimeout(&timeout, &tv);
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    base->unregisterTimeout(&timeout);
+    base->loop(EventBase::LoopMode::ONCE);
+    ASSERT_EQ(0, timeout.count);
+}
+
 } // wte namespace
