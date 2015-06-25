@@ -54,6 +54,7 @@ public:
     bool empty() const;
     size_t size() const { return size_; }
     void reserve(size_t capacity);
+    void reserve(size_t capacity, std::vector<Extent> *extents);
 
     struct InternalExtent {
         Extent extent;

@@ -179,4 +179,19 @@ TEST(BufferTest, TestReserve) {
     ASSERT_EQ("foo0123456789", contents(buf));
 }
 
+TEST(BufferTest, TestReserveWithExtents) {
+    Buffer buf = mkBuffer("");
+    std::vector<Extent> extents;
+    buf.reserve(10, &extents);
+    ASSERT_EQ(1U, extents.size());
+    ASSERT_NE(nullptr, extents[0].data);
+    ASSERT_EQ(10U, extents[0].size);
+
+    extents.clear();
+    buf.reserve(15, &extents);
+    ASSERT_EQ(2U, extents.size());
+    ASSERT_EQ(10U, extents[0].size);
+    ASSERT_EQ(5U, extents[1].size);
+}
+
 } // wte namespace

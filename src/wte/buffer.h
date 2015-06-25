@@ -145,6 +145,15 @@ public:
      * @param size the space to reserve
      */
     void reserve(size_t size);
+
+    /**
+     * Reserve at least `size` bytes of space in the buffer, returning 1 or
+     * more writable extents comprising the reserved region(s).
+     *
+     * @param size the space to reserve
+     * @param extents the reserved extents
+     */
+    void reserve(size_t size, std::vector<Extent> *extents);
 private:
     BufferImpl *pImpl_;
     friend class BufferImpl;

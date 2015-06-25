@@ -207,6 +207,25 @@ void BufferImpl::reserve(size_t size) {
     }
 }
 
+void BufferImpl::reserve(size_t size, std::vector<Extent> *extents) {
+    extents->reserve(2);
+    size_t required = size;
+    if (!list_empty()) {
+        InternalExtent *p = head_.prev;
+        size_t avail = p->appendable();
+        if (avail > 0) {
+            extents->emplace_back(Extent{avail,
+                p->extent.data + p->write_offset});
+            required -= avail;
+        }
+    }
+    if (required > 0) {
+        InternalExtent *cur = new InternalExtent(required);
+        listAppend(&head_, cur);
+        extents->emplace_back(Extent{required, cur->extent.data});
+    }
+}
+
 void BufferImpl::read(char *buf, size_t size, size_t *nread) {
     return read(buf, size, nread, /*consume=*/ true);
 }
@@ -288,6 +307,10 @@ size_t Buffer::size() const {
 
 void Buffer::reserve(size_t size) {
     return pImpl_->reserve(size);
+}
+
+void Buffer::reserve(size_t size, std::vector<Extent> *extents) {
+    return pImpl_->reserve(size, extents);
 }
 
 void Buffer::drain(size_t size) {
