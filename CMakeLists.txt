@@ -20,7 +20,7 @@ endif (NOT CMAKE_BUILD_TYPE)
 
 # Add third-party dependencies
 include(ExternalProject)
-include(External_libevent)
+include(External_LibEvent)
 include(External_gtest)
 
 # Use C++11
