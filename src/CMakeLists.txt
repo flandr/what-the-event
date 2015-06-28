@@ -47,7 +47,6 @@ endif(NOT WIN32)
 # Link dependencies
 target_link_libraries(${WhatTheEvent_SHARED_LIBRARY}
     ${LibEvent_LIBRARY}
-    ${LibEvent_PTHREADS_LIBRARY}
     ${EXTRA_LIBS}
 )
 
