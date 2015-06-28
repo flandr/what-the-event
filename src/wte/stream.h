@@ -73,6 +73,8 @@ public:
      * It is the caller's responsibility to ensure that the write callback
      * (if provided) remains live until it is invoked or the stream is closed.
      *
+     * May only be invoked on the stream's event base.
+     *
      * @param buf the buffer
      * @param size the buffer size
      * @param cb the callback (nullable)
@@ -86,6 +88,8 @@ public:
      * It is the caller's responsibility to ensure that the write callback
      * (if provided) remains live until it is invoked or the stream is closed.
      *
+     * May only be invoked on the stream's event base.
+     *
      * @param buf the buffer
      * @param cb the callback (nullable)
      */
@@ -97,6 +101,8 @@ public:
      * The read callback will be continuously invoked as long as there are
      * data available on the stream to read, until the `stopRead` method
      * is invoked.
+     *
+     * May only be invoked on the stream's event base.
      */
     virtual void startRead(ReadCallback *cb) = 0;
 
@@ -104,6 +110,8 @@ public:
      * Stop reading the stream.
      *
      * No read callbacks will fire after this method returns.
+     *
+     * May only be invoked on the stream's event base.
      */
     virtual void stopRead() = 0;
 
@@ -111,6 +119,8 @@ public:
      * Closes the stream.
      *
      * Invokes the eof callback if a read callback is registered.
+     *
+     * May only be invoked on the stream's event base.
      */
     virtual void close() = 0;
 };
