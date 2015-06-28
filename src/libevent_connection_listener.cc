@@ -75,10 +75,9 @@ void LibeventConnectionListener::bind(uint16_t port) {
             break;
         }
 
-        // XXX bind *all* addresses
         struct sockaddr_in saddr;
         saddr.sin_family = AF_INET;
-        rc = inet_pton(AF_INET, "127.0.0.1", &saddr.sin_addr);
+        rc = inet_pton(AF_INET, "0.0.0.0", &saddr.sin_addr);
         if (-1 == rc) {
             error = "Failed to convert address";
             break;

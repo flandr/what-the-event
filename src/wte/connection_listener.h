@@ -47,7 +47,7 @@ public:
     virtual ~ConnectionListener() { }
 
     /**
-     * Bind the the specified port.
+     * Bind the the specified port on all interfaces.
      *
      * @throws on error
      */
