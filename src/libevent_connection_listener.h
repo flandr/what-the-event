@@ -37,6 +37,7 @@ public:
     ~LibeventConnectionListener();
 
     void bind(uint16_t port) override;
+    void bind(std::string const& ip_addr, uint16_t port) override;
     void listen(int backlog) override;
     void startAccepting() override;
     void stopAccepting() override;

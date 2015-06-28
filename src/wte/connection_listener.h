@@ -54,6 +54,13 @@ public:
     virtual void bind(uint16_t port) = 0;
 
     /**
+     * Bind the the specified port on the specified ip.
+     *
+     * @throws on error
+     */
+    virtual void bind(std::string const& ip_addr, uint16_t port) = 0;
+
+    /**
      * Start listening for connections on the bound port, with specified
      * backlog. Invoking `listen` prior to `bind` will throw an exception.
      *

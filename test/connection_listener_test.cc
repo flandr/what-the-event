@@ -85,4 +85,9 @@ TEST_F(ConnectionListenerTest, JankyConnectTestXXXReplace) {
     ASSERT_EQ(0, error_count_);
 }
 
+TEST_F(ConnectionListenerTest, BindToBadIpThrows) {
+    auto listener = mkListener(base, mkAccept(), mkError());
+    ASSERT_THROW({ listener->bind("not.an.ip", 0); }, std::runtime_error);
+}
+
 } // wte namespace
