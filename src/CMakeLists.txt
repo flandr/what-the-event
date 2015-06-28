@@ -12,6 +12,12 @@ set(WhatTheEvent_SHARED_LIBRARY
     CACHE INTERNAL "what-the-event shared library"
 )
 
+# The shared library target
+set(WhatTheEvent_STATIC_LIBRARY
+    wte_s
+    CACHE INTERNAL "what-the-event shared library"
+)
+
 # Source translation units
 set(libwte_SRCS
     blocking_stream.cc
@@ -32,6 +38,11 @@ include_directories(
 
 # Main library targets
 add_library(${WhatTheEvent_SHARED_LIBRARY} SHARED ${libwte_SRCS})
+add_library(${WhatTheEvent_STATIC_LIBRARY} STATIC ${libwte_SRCS})
+if(NOT WIN32)
+    # Windows needs separate names, but other platforms do not
+    set_target_properties(wte_s PROPERTIES OUTPUT_NAME wte)
+endif(NOT WIN32)
 
 # Link dependencies
 target_link_libraries(${WhatTheEvent_SHARED_LIBRARY}
@@ -43,6 +54,7 @@ target_link_libraries(${WhatTheEvent_SHARED_LIBRARY}
 # Installation
 install(TARGETS
     ${WhatTheEvent_SHARED_LIBRARY}
+    ${WhatTheEvent_STATIC_LIBRARY}
     DESTINATION lib
     EXPORT wte-targets)
 install(EXPORT wte-targets DESTINATION lib)
