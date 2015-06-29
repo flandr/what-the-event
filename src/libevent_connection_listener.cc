@@ -83,7 +83,7 @@ void LibeventConnectionListener::bind(std::string const& ip_addr,
         struct sockaddr_in saddr;
         saddr.sin_family = AF_INET;
         rc = inet_pton(AF_INET, ip_addr.c_str(), &saddr.sin_addr);
-        if (-1 == rc) {
+        if (1 != rc) {
             error = "Failed to convert address";
             break;
         }
