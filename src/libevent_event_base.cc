@@ -54,8 +54,10 @@ public:
     void stop() override;
     void registerHandler(EventHandler*, What) override;
     void unregisterHandler(EventHandler*) override;
-    bool runOnEventLoop(std::function<void(void)> const& op) override;
-    bool runOnEventLoopAndWait(std::function<void(void)> const& op) override;
+    bool runOnEventLoop(std::function<void(void)> const& op,
+        bool defer) override;
+    bool runOnEventLoopAndWait(std::function<void(void)> const& op,
+        bool defer) override;
     void registerTimeout(Timeout *, struct timeval *duration) override;
     void unregisterTimeout(Timeout *) override;
 
@@ -216,11 +218,13 @@ void libeventTimeout(evutil_socket_t fd, int16_t flags, void *ctx) {
 } // unnamed namespace
 
 bool LibeventEventBase::inLoopThread() {
-    // Relaxed order is sufficient; if we're running in the loop-driving thread,
-    // whatever value was written is already visible to us (by definition). If
-    // we're not the loop thread, either we assigned the value to 0 as we
-    // exited the loop or by definition the value is != us.
-    auto cur = loopThread_.load(std::memory_order_relaxed);
+    // Acquire order is only required because this check is used to test whether
+    // a loop is running because of the zero comparison. Otherwise, relaxed
+    // order would be sufficient: if the caller is the loop-driving thread,
+    // the value was written by the current thread (by definition); otherwise,
+    // either the current thread assigned the value to zero on the way out of
+    // the loop, or by definition the value is != us.
+    auto cur = loopThread_.load(std::memory_order_acquire);
 #if !defined(_WIN32)
     return cur == 0 || pthread_equal(cur, pthread_self());
 #else
@@ -289,8 +293,9 @@ void LibeventEventBase::loop(LoopMode mode) {
     }
 }
 
-bool LibeventEventBase::runOnEventLoop(std::function<void(void)> const& op) {
-    if (inLoopThread()) {
+bool LibeventEventBase::runOnEventLoop(std::function<void(void)> const& op,
+        bool defer) {
+    if (!defer && inLoopThread()) {
         op();
         return true;
     }
@@ -305,8 +310,8 @@ bool LibeventEventBase::runOnEventLoop(std::function<void(void)> const& op) {
 }
 
 bool LibeventEventBase::runOnEventLoopAndWait(
-        std::function<void(void)> const& op) {
-    if (inLoopThread()) {
+        std::function<void(void)> const& op, bool defer) {
+    if (!defer && inLoopThread()) {
         op();
         return true;
     }
@@ -322,7 +327,7 @@ bool LibeventEventBase::runOnEventLoopAndWait(
                 done = true;
                 cv.notify_one();
             }
-        });
+        }, defer);
     if (!scheduled) {
         return false;
     }
@@ -409,7 +414,7 @@ void LibeventEventBase::stop() {
     runOnEventLoop([this]() -> void {
         terminate_.store(true, std::memory_order_release);
         event_base_loopexit(base_, nullptr);
-    });
+    }, /*defer=*/ false);
 
     {
         std::unique_lock<std::mutex> lock(await_.mutex);

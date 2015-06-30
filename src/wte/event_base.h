@@ -82,21 +82,27 @@ public:
      *
      * This method may be invoked on any thread, including the thread
      * currently driving this event loop. In the latter case, the operation
-     * is invoked immediately, without enqueuing.
+     * is invoked immediately, without enqueuing, unless the `defer` flag
+     * is true.
      *
      * @return false on error, otherwise true
      */
-    virtual bool runOnEventLoop(std::function<void(void)> const& op) = 0;
+    virtual bool runOnEventLoop(std::function<void(void)> const& op,
+        bool defer = false) = 0;
 
     /**
      * Enqeue an operation to run on the event base and wait for completion.
      *
      * Like `runOnEventLoop`, this executes immediately if invoked from
-     * the event loop thread.
+     * the event loop thread unless the `defer` flag is true. In the later
+     * case, this method will not execute immediately even if the caller is
+     * the loop thread. This can be useful, e.g., to synchronize with startup
+     * of another loop thread.
      *
      * @return false on error, otherwise true
      */
-    virtual bool runOnEventLoopAndWait(std::function<void(void)> const& op) = 0;
+    virtual bool runOnEventLoopAndWait(std::function<void(void)> const& op,
+        bool defer = false) = 0;
 
     /**
      * Registers a timeout on this event base.
