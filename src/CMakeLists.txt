@@ -23,6 +23,7 @@ set(libwte_SRCS
     blocking_stream.cc
     buffer.cc
     event_handler.cc
+    executors/loop_executor.cc
     libevent_connection_listener.cc
     libevent_event_base.cc
     libevent_event_handler.cc
