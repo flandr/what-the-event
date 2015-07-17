@@ -23,6 +23,7 @@
 
 #include <cstdlib>
 
+#include "wte/porting.h"
 #include "wte/stream.h"
 
 namespace wte {
@@ -30,7 +31,7 @@ namespace wte {
 class EventBase;
 
 /** Read/write stream with blocking operations. */
-class BlockingStream {
+class WTE_SYM BlockingStream {
 public:
     /**
      * Construct a blocking stream wrapper around an existing descriptor.

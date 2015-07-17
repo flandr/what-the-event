@@ -29,7 +29,7 @@ namespace wte {
 class EventBase;
 class EventHandlerImpl;
 
-class EventHandler {
+class WTE_SYM EventHandler {
 public:
     explicit EventHandler(int fd);
     virtual ~EventHandler();

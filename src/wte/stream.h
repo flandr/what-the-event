@@ -24,15 +24,16 @@
 #include <stdexcept>
 #include <functional>
 
-#include "wte/event_base.h"
 #include "wte/buffer.h"
+#include "wte/event_base.h"
+#include "wte/porting.h"
 
 namespace wte {
 
 /**
  * Interface for an asynchronous data stream.
  */
-class Stream {
+class WTE_SYM Stream {
 public:
     virtual ~Stream() { }
 
@@ -127,7 +128,7 @@ public:
 
 // TODO: temporary interface for testing. Must already be connected & set
 // to non-blocking mode.
-Stream *wrapFd(EventBase *base, int fd);
+WTE_SYM Stream *wrapFd(EventBase *base, int fd);
 
 } // wte namespace
 

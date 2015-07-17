@@ -25,6 +25,7 @@
 
 #include <sys/time.h>
 
+#include "wte/porting.h"
 #include "wte/what.h"
 
 namespace wte {
@@ -32,7 +33,7 @@ namespace wte {
 class EventHandler;
 class Timeout;
 
-class EventBase {
+class WTE_SYM EventBase {
 public:
     enum class LoopMode {
         /** Process active events and return. */
@@ -132,7 +133,7 @@ public:
 };
 
 /** @return a new event base. */
-EventBase *mkEventBase();
+WTE_SYM EventBase *mkEventBase();
 
 } // wte namespace
 

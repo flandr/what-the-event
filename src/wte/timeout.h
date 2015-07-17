@@ -27,7 +27,7 @@ namespace wte {
 
 class TimeoutImpl;
 
-class Timeout {
+class WTE_SYM Timeout {
 public:
     Timeout();
     virtual ~Timeout();
