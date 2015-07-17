@@ -19,14 +19,17 @@
  */
 
 #include <string.h>
-#include <unistd.h>
 
 #if !defined(_WIN32)
 #include <pthread.h>
+#include <unistd.h>
+#else
+#include <io.h>
 #endif
 
 #include <atomic>
 #include <cassert>
+#include <cinttypes>
 #include <condition_variable>
 #include <mutex>
 
@@ -341,7 +344,7 @@ bool LibeventEventBase::runOnEventLoopAndWait(
 }
 
 bool LibeventEventBase::consumeNotification() {
-    ssize_t rbytes;
+    int rbytes;
     uint64_t val = 0;
     uint64_t val8 = 0;
 

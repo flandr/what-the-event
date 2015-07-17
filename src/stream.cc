@@ -184,7 +184,7 @@ void StreamImpl::readHelper() {
 
     // TODO: consider not reading indefinitely
     for (;;) {
-        ssize_t nread = ::read(handler_.fd(), buf, sizeof(buf));
+        int nread = ::read(handler_.fd(), buf, sizeof(buf));
         if (nread < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 break;
@@ -228,7 +228,7 @@ void StreamImpl::writeHelper() {
         // TODO: writev
         size_t total_written = 0;
         for (auto& extent : extents) {
-            ssize_t written = ::write(handler_.fd(), extent.data, extent.size);
+            int written = ::write(handler_.fd(), extent.data, extent.size);
             if (written >= 0) {
                 total_written += written;
                 if (written < extent.size) {

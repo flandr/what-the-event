@@ -109,7 +109,7 @@ TEST_F(EventBaseTest, LoopExitsWhenEmpty) {
     memset(buf, 'A', sizeof(buf));
 
     for (int i = 0; i < 10; ++i) {
-        ssize_t nbytes = write(fds[1], buf, sizeof(buf));
+        int nbytes = write(fds[1], buf, sizeof(buf));
         ASSERT_EQ(sizeof(buf), nbytes);
     }
 
