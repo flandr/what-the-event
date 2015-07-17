@@ -37,7 +37,8 @@ struct dummy_t { };
 template<typename T>
 union optional_storage {
     dummy_t dummy;
-    typename std::aligned_storage<sizeof(T), alignof(T)>::type value;
+    typename std::aligned_storage<sizeof(T),
+        std::alignment_of<T>::value>::type value;
 
     optional_storage() : dummy() { }
     ~optional_storage() { }
