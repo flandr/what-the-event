@@ -1,5 +1,5 @@
 # Find a libevent installation
-# defines LibEevent_FOUND, LibEvent_INCLUDE_DIR, LibEvent_LIBRARIES
+# defines LIBEVENT_FOUND, LibEvent_INCLUDE_DIR, LibEvent_LIBRARIES
 
 IF(WIN32)
 SET(CMAKE_FIND_LIBRARY_PREFIXES "lib")

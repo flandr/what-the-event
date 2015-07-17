@@ -1,5 +1,5 @@
 find_package(LibEvent)
 
-if(LibEvent_FOUND)
+if(LIBEVENT_FOUND)
     include_directories(${LibEvent_INCLUDE_DIR})
 endif()
