@@ -41,7 +41,7 @@ class StreamImpl final : public Stream {
 public:
     // TODO: temporary fd-based constructor for testing
     StreamImpl(EventBase *base, int fd) : handler_(this, fd),
-        base_(base), requests_{nullptr, nullptr}, readCallback_(nullptr) { }
+        base_(base), requests_({nullptr, nullptr}), readCallback_(nullptr) { }
     ~StreamImpl();
 
     void write(const char *buf, size_t size, WriteCallback *cb) override;
