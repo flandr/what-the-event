@@ -4,6 +4,8 @@
 
 #include <event2/event_struct.h>
 
+#include <cinttypes>
+
 #include "event_handler_impl.h"
 
 namespace wte {

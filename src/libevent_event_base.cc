@@ -369,7 +369,7 @@ bool LibeventEventBase::signalNotifyQueue() {
     case Notify::Type::PIPE:
     case Notify::Type::SOCKETPAIR:
 #if defined(_WIN32)
-        ret = send(notify_.fds[1], buf, 1, 0);
+        ret = send(notify_.fds[1], (const char*) buf, 1, 0);
 #else
         ret = write(notify_.fds[1], buf, 1);
 #endif

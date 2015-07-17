@@ -21,7 +21,11 @@
 #include "wte/stream.h"
 
 #include <errno.h>
+#if !defined(_WIN32)
 #include <unistd.h>
+#else
+#include <io.h>
+#endif
 
 #include <cassert>
 #include <limits>
