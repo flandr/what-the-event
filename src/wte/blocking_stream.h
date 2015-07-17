@@ -21,6 +21,7 @@
 #ifndef WTE_BLOCKING_STREAM_H_
 #define WTE_BLOCKING_STREAM_H_
 
+#include <cinttypes>
 #include <cstdlib>
 
 #include "wte/porting.h"

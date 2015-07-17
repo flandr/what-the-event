@@ -22,6 +22,14 @@
 #define SRC_WTE_PORTING_H_
 
 #if defined(_WIN32)
+#define NOMINMAX
+// struct timeval, among other things
+#include <winsock2.h>
+#else
+#include <sys/time.h>
+#endif
+
+#if defined(_WIN32)
 #if defined(EXPORTING)
 #define WTE_SYM __declspec(dllexport)
 #else

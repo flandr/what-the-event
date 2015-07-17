@@ -23,8 +23,6 @@
 
 #include <functional>
 
-#include <sys/time.h>
-
 #include "wte/porting.h"
 #include "wte/what.h"
 
