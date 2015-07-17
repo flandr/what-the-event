@@ -22,8 +22,9 @@
 
 #include <string.h>
 
-#include <utility>
+#include <algorithm>
 #include <limits>
+#include <utility>
 
 #include "buffer-internal.h"
 #include "wte/buffer.h"
