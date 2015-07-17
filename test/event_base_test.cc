@@ -26,6 +26,7 @@
 #include "event_base_test.h"
 #include "wte/event_base.h"
 #include "wte/event_handler.h"
+#include "wte/porting.h"
 
 namespace wte {
 
@@ -41,7 +42,7 @@ class TestEventHandler final : public EventHandler {
 public:
     explicit TestEventHandler(int fd) : EventHandler(fd),
         last_event(What::NONE) { }
-    void ready(What event) noexcept override {
+    void ready(What event) NOEXCEPT override {
         last_event = event;
     }
     What last_event;
@@ -78,7 +79,7 @@ class LimitedReadConsumer final : public EventHandler {
 public:
     explicit LimitedReadConsumer(int fd, int nbytes) : EventHandler(fd),
         limit_(nbytes) { }
-    void ready(What event) noexcept override {
+    void ready(What event) NOEXCEPT override {
         char buf[64];
         int nread;
         while (limit_ > 0) {

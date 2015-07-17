@@ -24,6 +24,7 @@
 #include <thread>
 
 #include "event_base_test.h"
+#include "wte/porting.h"
 #include "wte/timeout.h"
 
 namespace wte {
@@ -32,7 +33,7 @@ class TimeoutTest : public EventBaseTest {
 public:
     class TestTimeout final : public Timeout {
     public:
-        void expired() noexcept {
+        void expired() NOEXCEPT {
             ++count;
         }
         int count = 0;

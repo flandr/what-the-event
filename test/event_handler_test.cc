@@ -22,6 +22,7 @@
 
 #include "event_base_test.h"
 #include "wte/event_handler.h"
+#include "wte/porting.h"
 
 namespace wte {
 
@@ -34,7 +35,7 @@ public:
         ~TestEventHandler() {
             unregister();
         }
-        void ready(What event) noexcept override {
+        void ready(What event) NOEXCEPT override {
             last_event = event;
         }
         What last_event;

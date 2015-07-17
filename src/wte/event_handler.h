@@ -21,6 +21,7 @@
 #ifndef WTE_EVENT_HANDLER_H_
 #define WTE_EVENT_HANDLER_H_
 
+#include "wte/porting.h"
 #include "wte/what.h"
 
 namespace wte {
@@ -42,7 +43,7 @@ public:
      *
      * Must not throw.
      */
-    virtual void ready(What event) noexcept = 0;
+    virtual void ready(What event) NOEXCEPT = 0;
 
     /**
      * Unregister this event from its base.

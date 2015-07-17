@@ -26,6 +26,8 @@
 #include <stdexcept>
 #include <utility>
 
+#include "wte/porting.h"
+
 namespace wte {
 
 /** Dummy type for use in `optional_storage`. */
@@ -97,7 +99,7 @@ public:
     /** @return whether the optional is engaged. */
     operator bool() const;
 private:
-    void clear() noexcept;
+    void clear() NOEXCEPT;
 
     template<typename... U>
     void construct(U && ...u) {
@@ -138,7 +140,7 @@ Optional<T>::Optional(T && v) {
 }
 
 template<typename T>
-void Optional<T>::clear() noexcept {
+void Optional<T>::clear() NOEXCEPT {
     if (engaged_) {
         // Explicitly destroy value in the union storage type
         value_.value.T::~T();

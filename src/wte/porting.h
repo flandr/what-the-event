@@ -18,27 +18,25 @@
  * SOFTWARE.
  */
 
-#ifndef SRC_WTE_TIMEOUT_H_
-#define SRC_WTE_TIMEOUT_H_
+#ifndef SRC_WTE_PORTING_H_
+#define SRC_WTE_PORTING_H_
 
-#include "wte/porting.h"
+#if defined(_WIN32)
+#if defined(EXPORTING)
+#define WTE_SYM __declspec(dllexport)
+#else
+#define WTE_SYM __declspec(dllimport)
+#endif
+#else
+#define WTE_SYM
+#endif
 
-namespace wte {
 
-class TimeoutImpl;
+// MSVC does not implement the noexcept keyword
+#if defined(_WIN32)
+#define NOEXCEPT
+#else
+#define NOEXCEPT noexcept
+#endif
 
-class Timeout {
-public:
-    Timeout();
-    virtual ~Timeout();
-
-    /**  Callback invoked when the timeout has expired. */
-    virtual void expired() NOEXCEPT = 0;
-private:
-    TimeoutImpl *impl_;
-    friend class TimeoutImpl;
-};
-
-} // wte namespace
-
-#endif // SRC_WTE_TIMEOUT_H_
+#endif // SRC_WTE_PORTING_H_

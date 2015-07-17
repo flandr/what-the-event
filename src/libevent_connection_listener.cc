@@ -37,6 +37,8 @@
 
 #include <event2/util.h>
 
+#include "wte/porting.h"
+
 namespace wte {
 
 LibeventConnectionListener::LibeventConnectionListener(EventBase *base,
@@ -128,7 +130,7 @@ void LibeventConnectionListener::listen(int backlog) {
     }
 }
 
-void LibeventConnectionListener::AcceptHandler::ready(What event) noexcept {
+void LibeventConnectionListener::AcceptHandler::ready(What event) NOEXCEPT {
     auto& handler = listener_->handler_;
 
     // TODO: we could loop this and accept multiple connections in a single

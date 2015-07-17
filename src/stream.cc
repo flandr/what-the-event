@@ -29,6 +29,7 @@
 #include "wte/buffer.h"
 #include "wte/event_base.h"
 #include "wte/event_handler.h"
+#include "wte/porting.h"
 
 namespace wte {
 
@@ -52,7 +53,7 @@ private:
     public:
         SockHandler(StreamImpl *stream, int fd)
             : EventHandler(fd), stream_(stream) { }
-        void ready(What what) noexcept override;
+        void ready(What what) NOEXCEPT override;
     private:
         StreamImpl *stream_;
     };
@@ -101,7 +102,7 @@ private:
     Buffer readBuffer_;
 };
 
-void StreamImpl::SockHandler::ready(What event) noexcept {
+void StreamImpl::SockHandler::ready(What event) NOEXCEPT {
     if (isWrite(event)) {
         stream_->writeHelper();
     }

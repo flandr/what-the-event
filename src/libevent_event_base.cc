@@ -39,6 +39,7 @@
 #include "timeout_impl.h"
 #include "wte/event_base.h"
 #include "wte/event_handler.h"
+#include "wte/porting.h"
 #include "wte/timeout.h"
 
 namespace wte {
@@ -65,7 +66,7 @@ public:
     public:
         NotifyHandler(LibeventEventBase *base, int fd)
                 : EventHandler(fd), base_(base) { }
-        void ready(What event) noexcept {
+        void ready(What event) NOEXCEPT {
             switch (event) {
             case What::READ:
                 base_->receiveNotifications();
