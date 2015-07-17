@@ -37,12 +37,9 @@ struct dummy_t { };
 template<typename T>
 union optional_storage {
     dummy_t dummy;
-    T value;
+    typename std::aligned_storage<sizeof(T), alignof(T)>::type value;
 
     optional_storage() : dummy() { }
-    optional_storage(T const& v) : value(v) { }
-    optional_storage(T && v) : value(std::move(v)) { }
-
     ~optional_storage() { }
 };
 
@@ -81,8 +78,7 @@ public:
             clear();
             return *this;
         }
-        value_.value = o.value_.value;
-        engaged_ = true;
+        construct(reinterpret_cast<T const&>(o.value_.value));
         return *this;
     }
 
@@ -123,7 +119,7 @@ Optional<T>::operator bool() const {
 template<typename T>
 Optional<T>::Optional(Optional<T> && o) {
     if (o.engaged_) {
-        construct(std::move(o.value_.value));
+        construct(std::move(reinterpret_cast<T&>(o.value_.value)));
     } else {
         engaged_ = false;
     }
@@ -143,7 +139,7 @@ template<typename T>
 void Optional<T>::clear() NOEXCEPT {
     if (engaged_) {
         // Explicitly destroy value in the union storage type
-        value_.value.T::~T();
+        reinterpret_cast<T&>(value_.value).T::~T();
         engaged_ = false;
     }
 }
@@ -153,7 +149,7 @@ T& Optional<T>::value() {
     if (!engaged_) {
         throw std::logic_error("Optional has no value");
     }
-    return value_.value;
+    return reinterpret_cast<T&>(value_.value);
 }
 
 template<typename T>
@@ -161,7 +157,7 @@ T const& Optional<T>::value() const {
     if (!engaged_) {
         throw std::logic_error("Optional has no value");
     }
-    return value_.value;
+    return reinterpret_cast<T const&>(value_.value);
 }
 
 } // wte namespace
