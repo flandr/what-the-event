@@ -29,6 +29,7 @@
 #include "wte/event_base.h"
 #include "wte/event_handler.h"
 #include "wte/porting.h"
+#include "xplat-io.h"
 
 namespace wte {
 
@@ -85,7 +86,7 @@ public:
         char buf[64];
         int nread;
         while (limit_ > 0) {
-            nread = read(fd(), buf, std::min((int) sizeof(buf), limit_));
+            nread = xread(fd(), buf, std::min((int) sizeof(buf), limit_));
             if (nread <= 0) {
                 break;
             }
@@ -111,7 +112,7 @@ TEST_F(EventBaseTest, LoopExitsWhenEmpty) {
     memset(buf, 'A', sizeof(buf));
 
     for (int i = 0; i < 10; ++i) {
-        int nbytes = write(fds[1], buf, sizeof(buf));
+        int nbytes = xwrite(fds[1], buf, sizeof(buf));
         ASSERT_EQ(sizeof(buf), nbytes);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Nathan Rosenblum <flander@gmail.com>
+ * Copyright (©) 2015 Nate Rosenblum
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,24 +20,15 @@
  * SOFTWARE.
  */
 
-#include <gtest/gtest.h>
+namespace wte {
 
-#if !defined(_WIN32)
-#include <signal.h>
-#else
-#include <winsock2.h>
-#endif
+/** Cross platform wrapper for write(2) to sockets. */
+int xwrite(int fd, const void *buf, size_t nbyte);
 
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
+/** Cross platform wrapper for read(2) from sockets. */
+int xread(int fd, void *buf, size_t nbyte);
 
-#if !defined(_WIN32)
-    signal(SIGPIPE, SIG_IGN);
-#else
-    WORD version = MAKEWORD(2, 2);
-    WSADATA data;
-    WSAStartup(version, &data);
-#endif
+/** Cross platform wrapper for close(2) for sockets. */
+int xclose(int fd);
 
-    return RUN_ALL_TESTS();
-}
+} // namespace wte

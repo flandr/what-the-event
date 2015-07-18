@@ -81,7 +81,7 @@ TEST_F(StreamTest, WritesRaiseCallbackOnCompletion) {
     ASSERT_TRUE(cb2.completed);
 
     char read_buf[128];
-    int nread = read(fds[1], read_buf, sizeof(read_buf));
+    int nread = xread(fds[1], read_buf, sizeof(read_buf));
     ASSERT_EQ(128, nread);
 }
 

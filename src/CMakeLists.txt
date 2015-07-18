@@ -28,6 +28,7 @@ set(libwte_SRCS
     libevent_event_handler.cc
     stream.cc
     timeout.cc
+    xplat-io.cc
 )
 
 # Set the include directories

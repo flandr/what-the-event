@@ -34,6 +34,7 @@
 #include "wte/event_base.h"
 #include "wte/event_handler.h"
 #include "wte/porting.h"
+#include "xplat-io.h"
 
 namespace wte {
 
@@ -173,7 +174,7 @@ void StreamImpl::close() {
     if (handler_.registered()) {
         handler_.unregister();
     }
-    ::close(handler_.fd());
+    xclose(handler_.fd());
 }
 
 StreamImpl::~StreamImpl() {
@@ -188,7 +189,7 @@ void StreamImpl::readHelper() {
 
     // TODO: consider not reading indefinitely
     for (;;) {
-        int nread = ::read(handler_.fd(), buf, sizeof(buf));
+        int nread = xread(handler_.fd(), buf, sizeof(buf));
         if (nread < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 break;
@@ -232,7 +233,7 @@ void StreamImpl::writeHelper() {
         // TODO: writev
         size_t total_written = 0;
         for (auto& extent : extents) {
-            int written = ::write(handler_.fd(), extent.data, extent.size);
+            int written = xwrite(handler_.fd(), extent.data, extent.size);
             if (written >= 0) {
                 total_written += written;
                 if (written < extent.size) {

@@ -59,7 +59,7 @@ TEST_F(EventHandlerTest, ReadEventsPostWhenAvailable) {
     base->registerHandler(&handler, What::READ);
 
     char buf[1] = {'A'};
-    ASSERT_EQ(1, write(fds[1], buf, sizeof(buf)));
+    ASSERT_EQ(1, xwrite(fds[1], buf, sizeof(buf)));
 
     // Loop once
     base->loop(EventBase::LoopMode::ONCE);
@@ -73,7 +73,7 @@ TEST_F(EventHandlerTest, UnregisteredEventsNotRaised) {
     base->registerHandler(&handler, What::READ);
 
     char buf[1] = {'A'};
-    ASSERT_EQ(1, write(fds[1], buf, sizeof(buf)));
+    ASSERT_EQ(1, xwrite(fds[1], buf, sizeof(buf)));
 
     handler.unregister();
 
