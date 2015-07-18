@@ -23,6 +23,8 @@
 #include <thread>
 #include <utility>
 
+#define NOMINMAX
+
 #include "event_base_test.h"
 #include "wte/event_base.h"
 #include "wte/event_handler.h"
