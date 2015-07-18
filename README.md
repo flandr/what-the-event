@@ -18,7 +18,7 @@ What The Event? wraps a subset of the functionality of
  - Manual or continuously driven [event loops](src/wte/event_base.h)
  - Buffered [asynchronous stream IO](src/wte/stream.h)
  - Convenience [blocking interfaces](src/wte/blocking_stream.h)
- - Socket [listener](stc/wte/connection_listener.h) for server applications
+ - Socket [listener](src/wte/connection_listener.h) for server applications
  - Arbitrary deferred task execution
  - Safe for use in multithreaded programs
  - Cross-platform (Windows, OS X, Linux) support
