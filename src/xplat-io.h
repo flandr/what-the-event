@@ -20,6 +20,8 @@
  * SOFTWARE.
  */
 
+#include <cstddef>
+
 namespace wte {
 
 /** Cross platform wrapper for write(2) to sockets. */
