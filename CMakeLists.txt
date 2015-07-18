@@ -21,11 +21,16 @@ endif (NOT CMAKE_BUILD_TYPE)
 # Add third-party dependencies
 include(ExternalProject)
 include(External_LibEvent)
-include(External_gtest)
 
 # Use C++11
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 add_subdirectory(example)
 add_subdirectory(src)
-add_subdirectory(test)
+
+option(BUILD_TESTS "Build unit tests" ON)
+
+if(BUILD_TESTS)
+    include(External_gtest)
+    add_subdirectory(test)
+endif()
