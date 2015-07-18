@@ -23,6 +23,9 @@ add_executable(test
 
 target_link_libraries(test
     gtest
-    pthread
     wte
 )
+
+if(NOT WIN32)
+    target_link_libraries(test pthread)
+endif(NOT WIN32)
