@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Nathan Rosenblum <flander@gmail.com>
+ * Copyright (©) 2015 Nate Rosenblum
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,24 +20,38 @@
  * SOFTWARE.
  */
 
-#include <gtest/gtest.h>
+#include "xplat-io.h"
 
-#if !defined(_WIN32)
-#include <signal.h>
-#else
+#if defined(_WIN32)
 #include <winsock2.h>
-#endif
-
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-
-#if !defined(_WIN32)
-    signal(SIGPIPE, SIG_IGN);
 #else
-    WORD version = MAKEWORD(2, 2);
-    WSADATA data;
-    WSAStartup(version, &data);
+#include <unistd.h>
 #endif
 
-    return RUN_ALL_TESTS();
+namespace wte {
+
+int xwrite(int fd, const void *buf, size_t nbyte) {
+#if defined(_WIN32)
+    return send(fd, (const char *) buf, nbyte, /*flags=*/ 0);
+#else
+    return write(fd, buf, nbyte);
+#endif
 }
+
+int xread(int fd, void *buf, size_t nbyte) {
+#if defined(_WIN32)
+    return recv(fd, (char *) buf, nbyte, /*flags=*/ 0);
+#else
+    return read(fd, buf, nbyte);
+#endif
+}
+
+int xclose(int fd) {
+#if defined(_WIN32)
+    return closesocket(fd);
+#else
+    return close(fd);
+#endif
+}
+
+} // wte namespace

@@ -77,7 +77,7 @@ TEST_F(ConnectionListenerTest, JankyConnectTestXXXReplace) {
 
     int sock = connectOrThrow(listener.get());
     ASSERT_NE(-1, sock);
-    close(sock);
+    xclose(sock);
 
     base->loop(EventBase::LoopMode::ONCE);
 

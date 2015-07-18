@@ -12,6 +12,9 @@ add_executable(echo-server
 )
 
 target_link_libraries(echo-server
-    pthread
     wte
 )
+
+if(NOT WIN32)
+    target_link_libraries(echo-server pthread)
+endif(NOT WIN32)

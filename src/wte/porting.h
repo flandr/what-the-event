@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Nathan Rosenblum <flander@gmail.com>
+ * Copyright (©) 2015 Nate Rosenblum
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -8,8 +8,6 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -20,24 +18,33 @@
  * SOFTWARE.
  */
 
-#include <gtest/gtest.h>
+#ifndef SRC_WTE_PORTING_H_
+#define SRC_WTE_PORTING_H_
 
-#if !defined(_WIN32)
-#include <signal.h>
-#else
+#if defined(_WIN32)
+#define NOMINMAX
+// struct timeval, among other things
 #include <winsock2.h>
-#endif
-
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-
-#if !defined(_WIN32)
-    signal(SIGPIPE, SIG_IGN);
 #else
-    WORD version = MAKEWORD(2, 2);
-    WSADATA data;
-    WSAStartup(version, &data);
+#include <sys/time.h>
 #endif
 
-    return RUN_ALL_TESTS();
-}
+#if defined(_WIN32)
+#if defined(EXPORTING)
+#define WTE_SYM __declspec(dllexport)
+#else
+#define WTE_SYM __declspec(dllimport)
+#endif
+#else
+#define WTE_SYM
+#endif
+
+
+// MSVC does not implement the noexcept keyword
+#if defined(_WIN32)
+#define NOEXCEPT
+#else
+#define NOEXCEPT noexcept
+#endif
+
+#endif // SRC_WTE_PORTING_H_

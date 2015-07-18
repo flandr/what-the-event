@@ -27,6 +27,7 @@
 #include <gtest/gtest.h>
 
 #include "wte/event_base.h"
+#include "xplat-io.h"
 
 namespace wte {
 
@@ -60,7 +61,7 @@ public:
         if (fds[Idx] == -1) {
             return;
         }
-        close(fds[Idx]);
+        xclose(fds[Idx]);
         fds[Idx] = -1;
     }
 protected:

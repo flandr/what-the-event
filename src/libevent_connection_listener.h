@@ -24,6 +24,7 @@
 #include "wte/connection_listener.h"
 
 #include "wte/event_handler.h"
+#include "wte/porting.h"
 
 namespace wte {
 
@@ -47,7 +48,7 @@ private:
     public:
         AcceptHandler(LibeventConnectionListener *listener, int fd)
             : EventHandler(fd), listener_(listener) { }
-        void ready(What what) noexcept override;
+        void ready(What what) NOEXCEPT override;
     private:
         LibeventConnectionListener *listener_;
     };

@@ -7,6 +7,11 @@ include_directories(
     ${gtest_INCLUDE_DIRS}
 )
 
+IF(WIN32)
+    # Linking statically; pretend we're exporting
+    add_definitions("-DEXPORTING")
+ENDIF(WIN32)
+
 add_executable(test
     blocking_stream_test.cc
     buffer_test.cc
@@ -23,6 +28,14 @@ add_executable(test
 
 target_link_libraries(test
     gtest
-    pthread
-    wte
 )
+
+if(NOT WIN32)
+    target_link_libraries(test ${WhatTheEvent_SHARED_LIBRARY})
+else(NOT WIN32)
+    target_link_libraries(test ${WhatTheEvent_STATIC_LIBRARY} ${LibEvent_LIBRARY} ws2_32)
+endif(NOT WIN32)
+
+if(NOT WIN32)
+    target_link_libraries(test pthread)
+endif(NOT WIN32)

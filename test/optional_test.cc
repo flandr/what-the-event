@@ -70,4 +70,14 @@ TEST(OptionalTest, AssignmentOperator) {
     ASSERT_EQ(1, full_target.value());
 }
 
+// Sanity
+TEST(OptionalTest, CopyFromNonPODValgrindSmokeTest) {
+    Optional<std::string> source(std::string(1024, 'A'));
+    Optional<std::string> target;
+
+    target = source;
+    ASSERT_TRUE(source);
+    ASSERT_TRUE(target);
+}
+
 } // wte namespace

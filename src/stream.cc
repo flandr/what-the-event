@@ -21,7 +21,11 @@
 #include "wte/stream.h"
 
 #include <errno.h>
+#if !defined(_WIN32)
 #include <unistd.h>
+#else
+#include <io.h>
+#endif
 
 #include <cassert>
 #include <limits>
@@ -29,6 +33,8 @@
 #include "wte/buffer.h"
 #include "wte/event_base.h"
 #include "wte/event_handler.h"
+#include "wte/porting.h"
+#include "xplat-io.h"
 
 namespace wte {
 
@@ -36,7 +42,7 @@ class StreamImpl final : public Stream {
 public:
     // TODO: temporary fd-based constructor for testing
     StreamImpl(EventBase *base, int fd) : handler_(this, fd),
-        base_(base), requests_{nullptr, nullptr}, readCallback_(nullptr) { }
+        base_(base), requests_({nullptr, nullptr}), readCallback_(nullptr) { }
     ~StreamImpl();
 
     void write(const char *buf, size_t size, WriteCallback *cb) override;
@@ -52,7 +58,7 @@ private:
     public:
         SockHandler(StreamImpl *stream, int fd)
             : EventHandler(fd), stream_(stream) { }
-        void ready(What what) noexcept override;
+        void ready(What what) NOEXCEPT override;
     private:
         StreamImpl *stream_;
     };
@@ -101,7 +107,7 @@ private:
     Buffer readBuffer_;
 };
 
-void StreamImpl::SockHandler::ready(What event) noexcept {
+void StreamImpl::SockHandler::ready(What event) NOEXCEPT {
     if (isWrite(event)) {
         stream_->writeHelper();
     }
@@ -168,7 +174,7 @@ void StreamImpl::close() {
     if (handler_.registered()) {
         handler_.unregister();
     }
-    ::close(handler_.fd());
+    xclose(handler_.fd());
 }
 
 StreamImpl::~StreamImpl() {
@@ -183,7 +189,7 @@ void StreamImpl::readHelper() {
 
     // TODO: consider not reading indefinitely
     for (;;) {
-        ssize_t nread = ::read(handler_.fd(), buf, sizeof(buf));
+        int nread = xread(handler_.fd(), buf, sizeof(buf));
         if (nread < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 break;
@@ -227,7 +233,7 @@ void StreamImpl::writeHelper() {
         // TODO: writev
         size_t total_written = 0;
         for (auto& extent : extents) {
-            ssize_t written = ::write(handler_.fd(), extent.data, extent.size);
+            int written = xwrite(handler_.fd(), extent.data, extent.size);
             if (written >= 0) {
                 total_written += written;
                 if (written < extent.size) {

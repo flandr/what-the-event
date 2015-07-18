@@ -21,17 +21,19 @@
 #ifndef SRC_WTE_TIMEOUT_H_
 #define SRC_WTE_TIMEOUT_H_
 
+#include "wte/porting.h"
+
 namespace wte {
 
 class TimeoutImpl;
 
-class Timeout {
+class WTE_SYM Timeout {
 public:
     Timeout();
     virtual ~Timeout();
 
     /**  Callback invoked when the timeout has expired. */
-    virtual void expired() noexcept = 0;
+    virtual void expired() NOEXCEPT = 0;
 private:
     TimeoutImpl *impl_;
     friend class TimeoutImpl;

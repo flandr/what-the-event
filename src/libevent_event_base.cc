@@ -19,14 +19,17 @@
  */
 
 #include <string.h>
-#include <unistd.h>
 
 #if !defined(_WIN32)
 #include <pthread.h>
+#include <unistd.h>
+#else
+#include <io.h>
 #endif
 
 #include <atomic>
 #include <cassert>
+#include <cinttypes>
 #include <condition_variable>
 #include <mutex>
 
@@ -39,7 +42,9 @@
 #include "timeout_impl.h"
 #include "wte/event_base.h"
 #include "wte/event_handler.h"
+#include "wte/porting.h"
 #include "wte/timeout.h"
+#include "xplat-io.h"
 
 namespace wte {
 
@@ -65,7 +70,7 @@ public:
     public:
         NotifyHandler(LibeventEventBase *base, int fd)
                 : EventHandler(fd), base_(base) { }
-        void ready(What event) noexcept {
+        void ready(What event) NOEXCEPT {
             switch (event) {
             case What::READ:
                 base_->receiveNotifications();
@@ -184,10 +189,10 @@ LibeventEventBase::~LibeventEventBase() {
     event_base_free(base_);
 
     if (notify_.fds[0] > 0) {
-        close(notify_.fds[0]);
+        xclose(notify_.fds[0]);
     }
     if (notify_.fds[1] > 0) {
-        close(notify_.fds[1]);
+        xclose(notify_.fds[1]);
     }
 }
 
@@ -340,16 +345,16 @@ bool LibeventEventBase::runOnEventLoopAndWait(
 }
 
 bool LibeventEventBase::consumeNotification() {
-    ssize_t rbytes;
+    int rbytes;
     uint64_t val = 0;
     uint64_t val8 = 0;
 
     switch (notify_.type) {
     case Notify::Type::EVENTFD:
-        rbytes = ::read(notify_.fds[0], &val, sizeof(val));
+        rbytes = xread(notify_.fds[0], &val, sizeof(val));
         break;
     default:
-        rbytes = ::read(notify_.fds[0], &val8, sizeof(val8));
+        rbytes = xread(notify_.fds[0], &val8, sizeof(val8));
     }
     if (rbytes <= 0) {
         return false;
@@ -364,15 +369,11 @@ bool LibeventEventBase::signalNotifyQueue() {
     switch (notify_.type) {
     case Notify::Type::PIPE:
     case Notify::Type::SOCKETPAIR:
-#if defined(_WIN32)
-        ret = send(notify_.fds[1], buf, 1, 0);
-#else
-        ret = write(notify_.fds[1], buf, 1);
-#endif
+        ret = xwrite(notify_.fds[1], buf, 1);
         break;
     case Notify::Type::EVENTFD:
 #if defined(HAVE_EVENTFD)
-        ret = write(notify_.fds[0], sizeof(buf));
+        ret = xwrite(notify_.fds[0], sizeof(buf));
 #else
         assert(0 && "eventfd not supported");
         ret = -1;

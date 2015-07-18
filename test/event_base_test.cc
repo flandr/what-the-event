@@ -23,9 +23,13 @@
 #include <thread>
 #include <utility>
 
+#define NOMINMAX
+
 #include "event_base_test.h"
 #include "wte/event_base.h"
 #include "wte/event_handler.h"
+#include "wte/porting.h"
+#include "xplat-io.h"
 
 namespace wte {
 
@@ -41,7 +45,7 @@ class TestEventHandler final : public EventHandler {
 public:
     explicit TestEventHandler(int fd) : EventHandler(fd),
         last_event(What::NONE) { }
-    void ready(What event) noexcept override {
+    void ready(What event) NOEXCEPT override {
         last_event = event;
     }
     What last_event;
@@ -78,11 +82,11 @@ class LimitedReadConsumer final : public EventHandler {
 public:
     explicit LimitedReadConsumer(int fd, int nbytes) : EventHandler(fd),
         limit_(nbytes) { }
-    void ready(What event) noexcept override {
+    void ready(What event) NOEXCEPT override {
         char buf[64];
         int nread;
         while (limit_ > 0) {
-            nread = read(fd(), buf, std::min((int) sizeof(buf), limit_));
+            nread = xread(fd(), buf, std::min((int) sizeof(buf), limit_));
             if (nread <= 0) {
                 break;
             }
@@ -108,7 +112,7 @@ TEST_F(EventBaseTest, LoopExitsWhenEmpty) {
     memset(buf, 'A', sizeof(buf));
 
     for (int i = 0; i < 10; ++i) {
-        ssize_t nbytes = write(fds[1], buf, sizeof(buf));
+        int nbytes = xwrite(fds[1], buf, sizeof(buf));
         ASSERT_EQ(sizeof(buf), nbytes);
     }
 

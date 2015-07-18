@@ -28,6 +28,7 @@ set(libwte_SRCS
     libevent_event_handler.cc
     stream.cc
     timeout.cc
+    xplat-io.cc
 )
 
 # Set the include directories
@@ -36,6 +37,9 @@ include_directories(
     .
 )
 
+# Export symbols, when relevant
+add_definitions("-DEXPORTING")
+
 # Main library targets
 add_library(${WhatTheEvent_SHARED_LIBRARY} SHARED ${libwte_SRCS})
 add_library(${WhatTheEvent_STATIC_LIBRARY} STATIC ${libwte_SRCS})
@@ -43,6 +47,13 @@ if(NOT WIN32)
     # Windows needs separate names, but other platforms do not
     set_target_properties(wte_s PROPERTIES OUTPUT_NAME wte)
 endif(NOT WIN32)
+
+add_dependencies(${WhatTheEvent_SHARED_LIBRARY} libevent_ext)
+add_dependencies(${WhatTheEvent_STATIC_LIBRARY} libevent_ext)
+
+if(WIN32)
+   set(EXTRA_LIBS ws2_32)
+endif(WIN32)
 
 # Link dependencies
 target_link_libraries(${WhatTheEvent_SHARED_LIBRARY}

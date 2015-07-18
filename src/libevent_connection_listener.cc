@@ -37,6 +37,9 @@
 
 #include <event2/util.h>
 
+#include "wte/porting.h"
+#include "xplat-io.h"
+
 namespace wte {
 
 LibeventConnectionListener::LibeventConnectionListener(EventBase *base,
@@ -48,7 +51,7 @@ LibeventConnectionListener::LibeventConnectionListener(EventBase *base,
 LibeventConnectionListener::~LibeventConnectionListener() {
     handler_.unregister();
     if (handler_.fd() != -1) {
-        close(handler_.fd());
+        xclose(handler_.fd());
     }
 }
 
@@ -114,7 +117,7 @@ void LibeventConnectionListener::bind(std::string const& ip_addr,
     assert(error);
 
     if (fd != -1) {
-        close(fd);
+        xclose(fd);
         fd = -1;
     }
 
@@ -128,7 +131,7 @@ void LibeventConnectionListener::listen(int backlog) {
     }
 }
 
-void LibeventConnectionListener::AcceptHandler::ready(What event) noexcept {
+void LibeventConnectionListener::AcceptHandler::ready(What event) NOEXCEPT {
     auto& handler = listener_->handler_;
 
     // TODO: we could loop this and accept multiple connections in a single
@@ -146,7 +149,7 @@ void LibeventConnectionListener::AcceptHandler::ready(What event) noexcept {
 
     int rc = evutil_make_socket_nonblocking(sock);
     if (-1 == rc) {
-        close(sock);
+        xclose(sock);
         std::runtime_error err("Failed to make accepted socket non-blocking");
         listener_->errorCallback_(err);
         return;

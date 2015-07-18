@@ -1,0 +1,20 @@
+version: 0.1.{build}
+
+skip_tags: true
+
+configuration:
+  - Debug
+
+install:
+  - SET PATH=C:\Program Files (x86)\MSBuild\12.0\bin\;%PATH%
+
+before_build:
+  - git submodule update --init --recursive
+  - cmake -G "Visual Studio 12" -H. -Bbuild
+
+build:
+  project: build\what-the-event.sln
+  parallel: true
+
+test_script:
+  - cd build && set PATH=%PATH%;src\Debug && test\Debug\test.exe

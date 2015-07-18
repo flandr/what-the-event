@@ -18,8 +18,6 @@
  * SOFTWARE.
  */
 
-#include <sys/time.h>
-
 #include "wte/timeout.h"
 
 namespace wte {

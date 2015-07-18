@@ -27,12 +27,14 @@
 
 #include <vector> // TODO: erg, not a stable interface...
 
+#include "wte/porting.h"
+
 namespace wte {
 
 class BufferImpl;
 
 /** A contiguous extent of data. */
-struct Extent {
+struct WTE_SYM Extent {
     /** Size of the buffer in `data`. */
     size_t size;
     char *data;
@@ -47,7 +49,7 @@ struct Extent {
  *
  * Methods that allocate memory can throw std::bad_alloc.
  */
-class Buffer {
+class WTE_SYM Buffer {
 public:
     Buffer();
     ~Buffer();

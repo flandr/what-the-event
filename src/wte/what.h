@@ -21,10 +21,12 @@
 #ifndef WTE_WHAT_H_
 #define WTE_WHAT_H_
 
+#include "wte/porting.h"
+
 namespace wte {
 
 /** Event types. */
-enum class What {
+enum class WTE_SYM What {
     NONE,
     READ,
     WRITE,

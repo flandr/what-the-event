@@ -24,6 +24,10 @@
 
 #include <stdio.h>
 
+#if defined(_WIN32)
+#include <winsock2.h>
+#endif
+
 struct Connection;
 
 class EchoWriteCallback final : public ::wte::Stream::WriteCallback {
@@ -91,6 +95,13 @@ static void errorCb(std::exception const& e) {
 }
 
 int main(int argc, char **argv) {
+#if defined(_WIN32)
+    // Initialize WSA
+    WORD version = MAKEWORD(2, 2);
+    WSADATA data;
+    WSAStartup(version, &data);
+#endif
+
     auto* base = wte::mkEventBase();
     auto* listener = wte::mkConnectionListener(base,
         std::bind(acceptCb, base, std::placeholders::_1), errorCb);
