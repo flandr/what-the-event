@@ -197,7 +197,10 @@ void StreamImpl::close() {
     if (handler_.registered()) {
         handler_.unregister();
     }
-    xclose(handler_.fd());
+
+    if (handler_.fd() != -1) {
+        xclose(handler_.fd());
+    }
 }
 
 void StreamImpl::connect(std::string const& ip, int16_t port,

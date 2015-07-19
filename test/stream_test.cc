@@ -21,6 +21,7 @@
  */
 
 #include <memory>
+#include <set>
 
 #include "event_base_test.h"
 #include "wte/connection_listener.h"
@@ -36,7 +37,8 @@ public:
     EchoServer(EventBase *base, int accept_count = -1) : base(base),
             accept(accept_count) {
         listener = mkConnectionListener(base, [this](int fd) -> void {
-                Connection *conn = new Connection(wrapFd(this->base, fd));
+                Connection *conn = new Connection(this, wrapFd(this->base, fd));
+                connections.insert(conn);
                 conn->stream->startRead(&conn->read_cb);
                 if (accept > 0) {
                     if (--accept == 0) {
@@ -50,6 +52,15 @@ public:
         listener->bind(0);
         listener->listen(128);
         listener->startAccepting();
+    }
+
+    ~EchoServer() {
+        delete listener;
+
+        for (auto* conn : connections) {
+            conn->server = nullptr;
+            delete conn;
+        }
     }
 
     int16_t port() {
@@ -88,13 +99,17 @@ public:
     };
 
     struct Connection {
-        explicit Connection(Stream *stream) : stream(stream), read_cb(this),
-            write_cb(this) { }
+        Connection(EchoServer *server, Stream *stream)
+            : server(server), stream(stream), read_cb(this), write_cb(this) { }
         ~Connection() {
+            if (server) {
+                server->connections.erase(this);
+            }
             stream->stopRead();
             stream->close();
             delete stream;
         }
+        EchoServer *server;
         Stream *stream;
         ReadCallback read_cb;
         WriteCallback write_cb;
@@ -103,6 +118,7 @@ public:
     EventBase *base;
     int accept;
     ConnectionListener *listener;
+    std::set<Connection*> connections;
 };
 
 void EchoServer::WriteCallback::error(std::runtime_error const&) {
@@ -280,6 +296,8 @@ TEST_F(StreamTest, TestConnect) {
 
     EXPECT_TRUE(ccb.completed);
     EXPECT_FALSE(ccb.errored);
+
+    delete stream;
 }
 
 TEST_F(StreamTest, TestCloseBeforeConnect) {
@@ -299,6 +317,8 @@ TEST_F(StreamTest, TestCloseBeforeConnect) {
 
     EXPECT_FALSE(ccb.completed);
     EXPECT_TRUE(ccb.errored);
+
+    delete stream;
 }
 
 TEST_F(StreamTest, TestConnectWriteRead) {
@@ -329,6 +349,8 @@ TEST_F(StreamTest, TestConnectWriteRead) {
     EXPECT_TRUE(ccb.completed);
     EXPECT_TRUE(wcb.completed);
     EXPECT_EQ(4, rcb.total_read);
+
+    delete stream;
 }
 
 } // wte namespace
