@@ -25,6 +25,7 @@
 #include "event_base_test.h"
 #include "wte/connection_listener.h"
 #include "wte/stream.h"
+#include "wte/timeout.h"
 
 namespace wte {
 
@@ -47,6 +48,18 @@ public:
 
     int16_t port() {
         return listener->port();
+    }
+
+    class EnsureTimeout final : public Timeout {
+    public:
+        void expired() NOEXCEPT { }
+    };
+
+    EnsureTimeout ensure_;
+
+    void ensureEvent() {
+        static struct timeval soon { 0, 1 };
+        base->registerTimeout(&ensure_, &soon);
     }
 
     class WriteCallback final : public Stream::WriteCallback {
@@ -260,6 +273,25 @@ TEST_F(StreamTest, TestConnect) {
 
     EXPECT_TRUE(ccb.completed);
     EXPECT_FALSE(ccb.errored);
+}
+
+TEST_F(StreamTest, TestCloseBeforeConnect) {
+    EchoServer echo(base);
+
+    TestConnectCallback ccb;
+    auto* stream = Stream::create(base);
+    stream->connect("127.0.0.1", echo.port(), &ccb);
+
+    // Close before connect
+    stream->close();
+
+    // Ensure that some event becomes "ready" on this loop-once call
+    echo.ensureEvent();
+
+    base->loop(EventBase::LoopMode::ONCE);
+
+    EXPECT_FALSE(ccb.completed);
+    EXPECT_TRUE(ccb.errored);
 }
 
 } // wte namespace
