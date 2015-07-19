@@ -22,13 +22,20 @@
 
 #include <errno.h>
 #if !defined(_WIN32)
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #else
 #include <io.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #endif
 
 #include <cassert>
 #include <limits>
+
+#include <event2/util.h>
 
 #include "wte/buffer.h"
 #include "wte/event_base.h"
@@ -42,7 +49,13 @@ class StreamImpl final : public Stream {
 public:
     // TODO: temporary fd-based constructor for testing
     StreamImpl(EventBase *base, int fd) : handler_(this, fd),
-        base_(base), requests_({nullptr, nullptr}), readCallback_(nullptr) { }
+        base_(base), requests_({nullptr, nullptr}), readCallback_(nullptr),
+        connectCallback_(nullptr) { }
+
+    explicit StreamImpl(EventBase *base) : handler_(this, -1),
+        base_(base), requests_({nullptr, nullptr}), readCallback_(nullptr),
+        connectCallback_(nullptr) { }
+
     ~StreamImpl();
 
     void write(const char *buf, size_t size, WriteCallback *cb) override;
@@ -50,9 +63,12 @@ public:
     void startRead(ReadCallback *cb) override;
     void stopRead() override;
     void close() override;
+    void connect(std::string const& ip_addr, int16_t port, ConnectCallback *cb)
+        override;
 private:
     void writeHelper();
     void readHelper();
+    void connectHelper();
 
     class SockHandler final : public EventHandler {
     public:
@@ -104,11 +120,15 @@ private:
         }
     } requests_;
     ReadCallback *readCallback_;
+    ConnectCallback *connectCallback_;
     Buffer readBuffer_;
 };
 
 void StreamImpl::SockHandler::ready(What event) NOEXCEPT {
     if (isWrite(event)) {
+        if (stream_->connectCallback_) {
+            stream_->connectHelper();
+        }
         stream_->writeHelper();
     }
 
@@ -171,10 +191,73 @@ void StreamImpl::close() {
     if (readCallback_) {
         readCallback_->eof();
     }
+    if (connectCallback_) {
+        connectCallback_->error(std::runtime_error("Closed before connect"));
+    }
     if (handler_.registered()) {
         handler_.unregister();
     }
     xclose(handler_.fd());
+}
+
+void StreamImpl::connect(std::string const& ip, int16_t port,
+        ConnectCallback *cb) {
+    assert(handler_.fd() == -1);
+    assert(connectCallback_ == nullptr);
+
+    const char *error = nullptr;
+    int fd = -1;
+
+    for (;;) {
+        fd = socket(AF_INET, SOCK_STREAM, 0);
+        if (-1 == fd) {
+            error = "Failed to allocate socket";
+            break;
+        }
+
+        int rc = evutil_make_socket_nonblocking(fd);
+        if (-1 == rc) {
+            error = "Failed to set socket non-blocking";
+            break;
+        }
+
+        struct sockaddr_in saddr;
+        saddr.sin_family = AF_INET;
+        rc = inet_pton(AF_INET, ip.c_str(), &saddr.sin_addr);
+        if (1 != rc) {
+            error = "Failed to convert address";
+            break;
+        }
+
+        saddr.sin_port = htons(port);
+        socklen_t len = sizeof(saddr);
+        rc = ::connect(fd, reinterpret_cast<struct sockaddr*>(&saddr), len);
+        if (rc == -1) {
+            if (errno == EINPROGRESS) {
+                // Expected; queue up the callback
+                handler_.setFd(fd);
+                connectCallback_ = cb;
+                base_->registerHandler(&handler_, ensureWrite(
+                    handler_.watched()));
+                return;
+            } else {
+                error = "Connect failed";
+                break;
+            }
+        }
+
+        // Connect succeeded immediately
+        handler_.setFd(fd);
+        cb->complete();
+
+        return;
+    }
+
+    if (fd != -1) {
+        xclose(fd);
+    }
+
+    cb->error(std::runtime_error(error));
 }
 
 StreamImpl::~StreamImpl() {
@@ -217,6 +300,38 @@ void StreamImpl::readHelper() {
             break;
         }
     }
+}
+
+void StreamImpl::connectHelper() {
+    assert(connectCallback_);
+
+    const char *error = nullptr;
+
+    for (;;) {
+        // Check connection status
+        int err = 0;
+        socklen_t len = sizeof(error);
+        int rc = getsockopt(handler_.fd(), SOL_SOCKET, SO_ERROR, &err, &len);
+        if (-1 == rc) {
+            error = "Failed to query connection status";
+            break;
+        }
+
+        if (error != 0) {
+            error = "Connection failed";
+            break;
+        }
+
+        // Good to go
+        auto *cb = connectCallback_;
+        connectCallback_ = nullptr;
+        cb->complete();
+        return;
+    }
+
+    auto *cb = connectCallback_;
+    connectCallback_ = nullptr;
+    cb->error(std::runtime_error(error));
 }
 
 void StreamImpl::writeHelper() {
@@ -277,6 +392,10 @@ void StreamImpl::writeHelper() {
 
 Stream* wrapFd(EventBase *base, int fd) {
     return new StreamImpl(base, fd);
+}
+
+Stream* Stream::create(EventBase *base) {
+    return new StreamImpl(base);
 }
 
 } // wte namespace

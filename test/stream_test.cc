@@ -23,9 +23,83 @@
 #include <memory>
 
 #include "event_base_test.h"
+#include "wte/connection_listener.h"
 #include "wte/stream.h"
 
 namespace wte {
+
+class EchoServer {
+public:
+    struct Connection;
+
+    explicit EchoServer(EventBase *base) : base(base) {
+        listener = mkConnectionListener(base, [this](int fd) -> void {
+                Connection *conn = new Connection(wrapFd(this->base, fd));
+                conn->stream->startRead(&conn->read_cb);
+            },
+            [this](std::exception const&) -> void {
+                // Nothing
+            });
+        listener->bind(0);
+        listener->listen(128);
+        listener->startAccepting();
+    }
+
+    int16_t port() {
+        return listener->port();
+    }
+
+    class WriteCallback final : public Stream::WriteCallback {
+    public:
+        explicit WriteCallback(Connection *conn) : conn(conn) { }
+        void complete(wte::Stream *) override { }
+        void error(std::runtime_error const&);
+
+        Connection *conn;
+    };
+
+    class ReadCallback final : public Stream::ReadCallback {
+    public:
+        explicit ReadCallback(Connection *conn) : conn(conn) { }
+        void available(wte::Buffer *buf) override;
+        void eof() override;
+        void error(std::runtime_error const&);
+
+        Connection *conn;
+    };
+
+    struct Connection {
+        explicit Connection(Stream *stream) : stream(stream), read_cb(this),
+            write_cb(this) { }
+        ~Connection() {
+            stream->stopRead();
+            stream->close();
+            delete stream;
+        }
+        Stream *stream;
+        ReadCallback read_cb;
+        WriteCallback write_cb;
+    };
+
+    EventBase *base;
+    ConnectionListener *listener;
+};
+
+void EchoServer::WriteCallback::error(std::runtime_error const&) {
+    delete conn;
+}
+
+void EchoServer::ReadCallback::available(wte::Buffer *buf) {
+    conn->stream->write(buf, &conn->write_cb);
+}
+
+void EchoServer::ReadCallback::eof() {
+    delete conn;
+}
+
+void EchoServer::ReadCallback::error(std::runtime_error const&) {
+    delete conn;
+}
 
 class StreamTest : public EventBaseTest {
 public:
@@ -58,6 +132,19 @@ public:
 
         size_t total_read = 0;
         bool hit_eof = false;
+        bool errored = false;
+    };
+
+    class TestConnectCallback final : public Stream::ConnectCallback {
+    public:
+        void complete() override {
+            completed = true;
+        }
+
+        void error(std::runtime_error const&) override {
+            errored = true;
+        }
+        bool completed = false;
         bool errored = false;
     };
 };
@@ -156,6 +243,23 @@ TEST_F(StreamTest, CloseRaisesEofCallback) {
 
     // prevent double-close
     fds[1] = -1;
+}
+
+TEST_F(StreamTest, TestConnect) {
+    EchoServer echo(base);
+
+    TestConnectCallback ccb;
+    auto* stream = Stream::create(base);
+    stream->connect("127.0.0.1", echo.port(), &ccb);
+
+    // Nothing happens until we drive the loop
+    ASSERT_FALSE(ccb.completed);
+    ASSERT_FALSE(ccb.errored);
+
+    base->loop(EventBase::LoopMode::ONCE);
+
+    EXPECT_TRUE(ccb.completed);
+    EXPECT_FALSE(ccb.errored);
 }
 
 } // wte namespace

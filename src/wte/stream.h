@@ -35,6 +35,18 @@ namespace wte {
  */
 class WTE_SYM Stream {
 public:
+    /**
+     * Allocate an return an unconnected stream.
+     *
+     * Streams created by this method must be established via a call to
+     * `connect` before they can be used. Failure to do so will cause
+     * an exception to be thrown by most interfaces, except where noted.
+     *
+     * @param base the event base for stream IO
+     * @return an unconnected stream
+     */
+    static Stream* create(EventBase *base);
+
     virtual ~Stream() { }
 
     /** Write callback interface. */
@@ -65,6 +77,15 @@ public:
 
         /** Invoked when the stream has been closed on the other side. */
         virtual void eof() = 0;
+    };
+
+    class ConnectCallback {
+    public:
+        /** Invoked when the connection completes successfully. */
+        virtual void complete() = 0;
+
+        /** Invoked when the connection fails. */
+        virtual void error(std::runtime_error const&) = 0;
     };
 
     /**
@@ -124,6 +145,20 @@ public:
      * May only be invoked on the stream's event base.
      */
     virtual void close() = 0;
+
+    /**
+     * Connect to the specified ip and port.
+     *
+     * Invokes the connection callback on success or failure.
+     *
+     * May only be invoked on the stream's event base.
+     *
+     * @param ip_addr the target host ip
+     * @param port the target host port
+     * @param cb the connection callback
+     */
+    virtual void connect(std::string const& ip_addr, int16_t port,
+        ConnectCallback *cb) = 0;
 };
 
 // TODO: temporary interface for testing. Must already be connected & set
