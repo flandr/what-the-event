@@ -33,10 +33,16 @@ class EchoServer {
 public:
     struct Connection;
 
-    explicit EchoServer(EventBase *base) : base(base) {
+    EchoServer(EventBase *base, int accept_count = -1) : base(base),
+            accept(accept_count) {
         listener = mkConnectionListener(base, [this](int fd) -> void {
                 Connection *conn = new Connection(wrapFd(this->base, fd));
                 conn->stream->startRead(&conn->read_cb);
+                if (accept > 0) {
+                    if (--accept == 0) {
+                        listener->stopAccepting();
+                    }
+                }
             },
             [this](std::exception const&) -> void {
                 // Nothing
@@ -95,6 +101,7 @@ public:
     };
 
     EventBase *base;
+    int accept;
     ConnectionListener *listener;
 };
 
@@ -128,7 +135,7 @@ public:
         bool errored = false;
     };
 
-    class TestReadCallback final : public Stream::ReadCallback {
+    class TestReadCallback : public Stream::ReadCallback {
     public:
         void available(Buffer *buf) override {
             total_read += buf->size();
@@ -292,6 +299,36 @@ TEST_F(StreamTest, TestCloseBeforeConnect) {
 
     EXPECT_FALSE(ccb.completed);
     EXPECT_TRUE(ccb.errored);
+}
+
+TEST_F(StreamTest, TestConnectWriteRead) {
+    EchoServer echo(base, /*accept count=*/ 1);
+
+    TestConnectCallback ccb;
+    auto* stream = Stream::create(base);
+    stream->connect("127.0.0.1", echo.port(), &ccb);
+
+    TestWriteCallback wcb;
+    stream->write("ping", 4, &wcb);
+
+    class ReadOnceCallback : public TestReadCallback {
+    public:
+        explicit ReadOnceCallback(Stream *stream) : stream(stream) { }
+        void available(Buffer *buf) override {
+            this->TestReadCallback::available(buf);
+            stream->close();
+        }
+        Stream *stream;
+    };
+
+    ReadOnceCallback rcb(stream);
+    stream->startRead(&rcb);
+
+    base->loop(EventBase::LoopMode::UNTIL_EMPTY);
+
+    EXPECT_TRUE(ccb.completed);
+    EXPECT_TRUE(wcb.completed);
+    EXPECT_EQ(4, rcb.total_read);
 }
 
 } // wte namespace
