@@ -398,12 +398,18 @@ void StreamImpl::writeHelper() {
     }
 }
 
-Stream* wrapFd(EventBase *base, int fd) {
-    return new StreamImpl(base, fd);
+void Stream::Deleter::operator()(Stream *stream) {
+    delete stream;
 }
 
-Stream* Stream::create(EventBase *base) {
-    return new StreamImpl(base);
+std::unique_ptr<Stream, Stream::Deleter> wrapFd(EventBase *base, int fd) {
+    return std::unique_ptr<Stream, Stream::Deleter>(
+         new StreamImpl(base, fd), Stream::Deleter());
+}
+
+std::unique_ptr<Stream, Stream::Deleter> Stream::create(EventBase *base) {
+    return std::unique_ptr<Stream, Stream::Deleter>(
+         new StreamImpl(base), Stream::Deleter());
 }
 
 } // wte namespace

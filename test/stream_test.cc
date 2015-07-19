@@ -99,18 +99,19 @@ public:
     };
 
     struct Connection {
-        Connection(EchoServer *server, Stream *stream)
-            : server(server), stream(stream), read_cb(this), write_cb(this) { }
+        Connection(EchoServer *server, std::unique_ptr<Stream,
+            Stream::Deleter> &&stream) : server(server),
+                stream(std::move(stream)), read_cb(this), write_cb(this) { }
         ~Connection() {
             if (server) {
                 server->connections.erase(this);
             }
             stream->stopRead();
             stream->close();
-            delete stream;
+            stream.reset(nullptr);
         }
         EchoServer *server;
-        Stream *stream;
+        std::unique_ptr<Stream, Stream::Deleter> stream;
         ReadCallback read_cb;
         WriteCallback write_cb;
     };
@@ -189,7 +190,7 @@ TEST_F(StreamTest, WritesRaiseCallbackOnCompletion) {
     TestWriteCallback cb1;
     TestWriteCallback cb2;
 
-    std::unique_ptr<Stream> stream(wrapFd(base, fds[0]));
+    auto stream = wrapFd(base, fds[0]);
 
     char buf[64];
     memset(buf, 'A', sizeof(buf));
@@ -212,8 +213,8 @@ TEST_F(StreamTest, LargeWrites) {
     TestWriteCallback wcb;
     TestReadCallback rcb;
 
-    std::unique_ptr<Stream> wstream(wrapFd(base, fds[0]));
-    std::unique_ptr<Stream> rstream(wrapFd(base, fds[1]));
+    auto wstream = wrapFd(base, fds[0]);
+    auto rstream = wrapFd(base, fds[1]);
 
     const int kLarge = 1 << 20; // "large"
     char *wbuf = new char[kLarge];
@@ -236,7 +237,7 @@ TEST_F(StreamTest, WriteErrorsRaiseCallback) {
     // whether that's expected behavior or not and need to check.
 #if !defined(_WIN32)
     TestWriteCallback cb;
-    std::unique_ptr<Stream> stream(wrapFd(base, fds[0]));
+    auto stream = wrapFd(base, fds[0]);
 
     char buf[64];
     memset(buf, 'A', sizeof(buf));
@@ -256,8 +257,8 @@ TEST_F(StreamTest, ReadableDataRaisesCallback) {
     TestWriteCallback wcb;
     TestReadCallback rcb;
 
-    std::unique_ptr<Stream> wstream(wrapFd(base, fds[0]));
-    std::unique_ptr<Stream> rstream(wrapFd(base, fds[1]));
+    auto wstream = wrapFd(base, fds[0]);
+    auto rstream = wrapFd(base, fds[1]);
 
     wstream->write("ping", 4, &wcb);
     rstream->startRead(&rcb);
@@ -272,7 +273,7 @@ TEST_F(StreamTest, ReadableDataRaisesCallback) {
 
 TEST_F(StreamTest, CloseRaisesEofCallback) {
     TestReadCallback rcb;
-    std::unique_ptr<Stream> rstream(wrapFd(base, fds[1]));
+    auto rstream = wrapFd(base, fds[1]);
     rstream->startRead(&rcb);
     rstream->close();
     ASSERT_TRUE(rcb.hit_eof);
@@ -285,7 +286,7 @@ TEST_F(StreamTest, TestConnect) {
     EchoServer echo(base);
 
     TestConnectCallback ccb;
-    auto* stream = Stream::create(base);
+    auto stream = Stream::create(base);
     stream->connect("127.0.0.1", echo.port(), &ccb);
 
     // Nothing happens until we drive the loop
@@ -296,15 +297,13 @@ TEST_F(StreamTest, TestConnect) {
 
     EXPECT_TRUE(ccb.completed);
     EXPECT_FALSE(ccb.errored);
-
-    delete stream;
 }
 
 TEST_F(StreamTest, TestCloseBeforeConnect) {
     EchoServer echo(base);
 
     TestConnectCallback ccb;
-    auto* stream = Stream::create(base);
+    auto stream = Stream::create(base);
     stream->connect("127.0.0.1", echo.port(), &ccb);
 
     // Close before connect
@@ -317,15 +316,13 @@ TEST_F(StreamTest, TestCloseBeforeConnect) {
 
     EXPECT_FALSE(ccb.completed);
     EXPECT_TRUE(ccb.errored);
-
-    delete stream;
 }
 
 TEST_F(StreamTest, TestConnectWriteRead) {
     EchoServer echo(base, /*accept count=*/ 1);
 
     TestConnectCallback ccb;
-    auto* stream = Stream::create(base);
+    auto stream = Stream::create(base);
     stream->connect("127.0.0.1", echo.port(), &ccb);
 
     TestWriteCallback wcb;
@@ -341,7 +338,7 @@ TEST_F(StreamTest, TestConnectWriteRead) {
         Stream *stream;
     };
 
-    ReadOnceCallback rcb(stream);
+    ReadOnceCallback rcb(stream.get());
     stream->startRead(&rcb);
 
     base->loop(EventBase::LoopMode::UNTIL_EMPTY);
@@ -349,8 +346,6 @@ TEST_F(StreamTest, TestConnectWriteRead) {
     EXPECT_TRUE(ccb.completed);
     EXPECT_TRUE(wcb.completed);
     EXPECT_EQ(4, rcb.total_read);
-
-    delete stream;
 }
 
 } // wte namespace

@@ -59,9 +59,8 @@ struct Connection {
     ~Connection() {
         stream->stopRead();
         stream->close();
-        delete stream;
     }
-    wte::Stream *stream;
+    std::unique_ptr<wte::Stream, wte::Stream::Deleter> stream;
     EchoWriteCallback write_cb;
     EchoReadCallback read_cb;
 };

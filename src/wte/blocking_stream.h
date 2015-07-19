@@ -66,7 +66,7 @@ public:
     int64_t read(char *buf, size_t size);
 private:
     EventBase *base_;
-    Stream *stream_;
+    std::unique_ptr<Stream, Stream::Deleter> stream_;
     bool close_;
 };
 

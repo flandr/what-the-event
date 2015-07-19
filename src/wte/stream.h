@@ -21,8 +21,9 @@
 #ifndef WTE_STREAM_H_
 #define WTE_STREAM_H_
 
-#include <stdexcept>
 #include <functional>
+#include <stdexcept>
+#include <memory>
 
 #include "wte/buffer.h"
 #include "wte/event_base.h"
@@ -35,6 +36,11 @@ namespace wte {
  */
 class WTE_SYM Stream {
 public:
+    class WTE_SYM Deleter {
+    public:
+        void operator()(Stream *);
+    };
+
     /**
      * Allocate an return an unconnected stream.
      *
@@ -45,7 +51,7 @@ public:
      * @param base the event base for stream IO
      * @return an unconnected stream
      */
-    static Stream* create(EventBase *base);
+    static std::unique_ptr<Stream, Deleter> create(EventBase *base);
 
     virtual ~Stream() { }
 
@@ -163,7 +169,7 @@ public:
 
 // TODO: temporary interface for testing. Must already be connected & set
 // to non-blocking mode.
-WTE_SYM Stream *wrapFd(EventBase *base, int fd);
+WTE_SYM std::unique_ptr<Stream, Stream::Deleter> wrapFd(EventBase *base, int fd);
 
 } // wte namespace
 
