@@ -21,6 +21,7 @@
 #ifndef WTE_STREAM_H_
 #define WTE_STREAM_H_
 
+#include <cinttypes>
 #include <functional>
 #include <stdexcept>
 #include <memory>
