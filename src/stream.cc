@@ -314,7 +314,12 @@ void StreamImpl::connectHelper() {
         // Check connection status
         int err = 0;
         socklen_t len = sizeof(error);
+#if defined(_WIN32)
+        int rc = getsockopt(handler_.fd(), SOL_SOCKET, SO_ERROR,
+            (char *) &err, &len);
+#else
         int rc = getsockopt(handler_.fd(), SOL_SOCKET, SO_ERROR, &err, &len);
+#endif
         if (-1 == rc) {
             error = "Failed to query connection status";
             break;
