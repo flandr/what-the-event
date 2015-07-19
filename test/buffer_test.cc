@@ -77,6 +77,15 @@ TEST(BufferTest, TestAppendBuffer) {
     ASSERT_EQ("foo", contents(buf));
 }
 
+TEST(BufferTest, TestAppendString) {
+    const std::string kBuf{"foo"};
+    Buffer buf = mkBuffer();
+    buf.append(kBuf);
+    ASSERT_EQ(kBuf.size(), buf.size());
+    ASSERT_FALSE(buf.empty());
+    ASSERT_EQ(kBuf, contents(buf));
+}
+
 TEST(BufferTest, TestPrepend) {
     const std::string kBuf1 { "bar" };
     const std::string kBuf2 { "foo" };
@@ -90,6 +99,15 @@ TEST(BufferTest, TestPrependBuffer) {
     Buffer buf = mkBuffer("bar");
     Buffer buf2 = mkBuffer("foo");
     buf.prepend(&buf2);
+    ASSERT_EQ("foobar", contents(buf));
+}
+
+TEST(BufferTest, TestPrependString) {
+    const std::string kBuf1 { "bar" };
+    const std::string kBuf2 { "foo" };
+    Buffer buf = mkBuffer(kBuf1);
+    buf.prepend(kBuf2);
+    ASSERT_EQ(kBuf1.size() + kBuf2.size(), buf.size());
     ASSERT_EQ("foobar", contents(buf));
 }
 
