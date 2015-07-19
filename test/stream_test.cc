@@ -20,6 +20,8 @@
  * SOFTWARE.
  */
 
+#include <stdio.h>
+
 #include <memory>
 #include <set>
 
@@ -178,7 +180,9 @@ public:
             completed = true;
         }
 
-        void error(std::runtime_error const&) override {
+        void error(std::runtime_error const& e) override {
+            // XXX debugging
+            fprintf(stderr, "Connect callback error: %s\n", e.what());
             errored = true;
         }
         bool completed = false;
