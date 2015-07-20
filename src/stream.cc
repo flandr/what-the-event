@@ -20,7 +20,6 @@
 
 #include "wte/stream.h"
 
-#include <errno.h>
 #if !defined(_WIN32)
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -44,6 +43,22 @@
 #include "xplat-io.h"
 
 namespace wte {
+
+inline bool isConnectRetryable(int e) {
+#if !defined(_WIN32)
+    return e == EINPROGRESS;
+#else
+    return e == WSAEWOULDBLOCK || e == WSAEINPROGRESS || e == WSAEINTR;
+#endif
+}
+
+inline bool isReadRetryable(int e) {
+#if !defined(_WIN32)
+    return e == EAGAIN || e == EWOULDBLOCK;
+#else
+    return e == WSAEWOULDBLOCK || e == WSAEINTR;
+#endif
+}
 
 class StreamImpl final : public Stream {
 public:
@@ -236,7 +251,7 @@ void StreamImpl::connect(std::string const& ip, int16_t port,
         socklen_t len = sizeof(saddr);
         rc = ::connect(fd, reinterpret_cast<struct sockaddr*>(&saddr), len);
         if (rc == -1) {
-            if (errno == EINPROGRESS) {
+            if (isConnectRetryable(evutil_socket_geterror(fd))) {
                 // Expected; queue up the callback
                 handler_.setFd(fd);
                 connectCallback_ = cb;
@@ -277,7 +292,7 @@ void StreamImpl::readHelper() {
     for (;;) {
         int nread = xread(handler_.fd(), buf, sizeof(buf));
         if (nread < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            if (isReadRetryable(evutil_socket_geterror(handler_.fd()))) {
                 break;
             }
             // TODO: better errors
