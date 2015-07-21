@@ -20,6 +20,8 @@
 
 #include "wte/stream.h"
 
+#include <errno.h>
+
 #if !defined(_WIN32)
 #include <arpa/inet.h>
 #include <netinet/in.h>
