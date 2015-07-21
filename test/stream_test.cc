@@ -20,8 +20,6 @@
  * SOFTWARE.
  */
 
-#include <stdio.h>
-
 #include <memory>
 #include <set>
 
@@ -63,6 +61,8 @@ public:
             conn->server = nullptr;
             delete conn;
         }
+
+        base->unregisterTimeout(&ensure_);
     }
 
     int16_t port() {
@@ -72,6 +72,7 @@ public:
     class EnsureTimeout final : public Timeout {
     public:
         void expired() NOEXCEPT { }
+        ~EnsureTimeout() { }
     };
 
     EnsureTimeout ensure_;
@@ -181,8 +182,6 @@ public:
         }
 
         void error(std::runtime_error const& e) override {
-            // XXX debugging
-            fprintf(stderr, "Connect callback error: %s\n", e.what());
             errored = true;
         }
         bool completed = false;
