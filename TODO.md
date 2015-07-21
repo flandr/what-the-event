@@ -4,7 +4,7 @@ An incomplete list of things to do.
 
 ## Interfaces
 
- - Stream connection via host or ip
+ - Stream connection via host ~~or ip~~
  - Default implementations for handler methods
 
 ## Major features

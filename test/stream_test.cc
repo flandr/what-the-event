@@ -21,11 +21,125 @@
  */
 
 #include <memory>
+#include <set>
 
 #include "event_base_test.h"
+#include "wte/connection_listener.h"
 #include "wte/stream.h"
+#include "wte/timeout.h"
 
 namespace wte {
+
+class EchoServer {
+public:
+    struct Connection;
+
+    EchoServer(EventBase *base, int accept_count = -1) : base(base),
+            accept(accept_count) {
+        listener = mkConnectionListener(base, [this](int fd) -> void {
+                Connection *conn = new Connection(this, wrapFd(this->base, fd));
+                connections.insert(conn);
+                conn->stream->startRead(&conn->read_cb);
+                if (accept > 0) {
+                    if (--accept == 0) {
+                        listener->stopAccepting();
+                    }
+                }
+            },
+            [this](std::exception const&) -> void {
+                // Nothing
+            });
+        listener->bind(0);
+        listener->listen(128);
+        listener->startAccepting();
+    }
+
+    ~EchoServer() {
+        delete listener;
+
+        for (auto* conn : connections) {
+            conn->server = nullptr;
+            delete conn;
+        }
+
+        base->unregisterTimeout(&ensure_);
+    }
+
+    int16_t port() {
+        return listener->port();
+    }
+
+    class EnsureTimeout final : public Timeout {
+    public:
+        void expired() NOEXCEPT { }
+        ~EnsureTimeout() { }
+    };
+
+    EnsureTimeout ensure_;
+
+    void ensureEvent() {
+        static struct timeval soon { 0, 1 };
+        base->registerTimeout(&ensure_, &soon);
+    }
+
+    class WriteCallback final : public Stream::WriteCallback {
+    public:
+        explicit WriteCallback(Connection *conn) : conn(conn) { }
+        void complete(wte::Stream *) override { }
+        void error(std::runtime_error const&);
+
+        Connection *conn;
+    };
+
+    class ReadCallback final : public Stream::ReadCallback {
+    public:
+        explicit ReadCallback(Connection *conn) : conn(conn) { }
+        void available(wte::Buffer *buf) override;
+        void eof() override;
+        void error(std::runtime_error const&);
+
+        Connection *conn;
+    };
+
+    struct Connection {
+        Connection(EchoServer *server, std::unique_ptr<Stream,
+            Stream::Deleter> &&stream) : server(server),
+                stream(std::move(stream)), read_cb(this), write_cb(this) { }
+        ~Connection() {
+            if (server) {
+                server->connections.erase(this);
+            }
+            stream->stopRead();
+            stream->close();
+            stream.reset(nullptr);
+        }
+        EchoServer *server;
+        std::unique_ptr<Stream, Stream::Deleter> stream;
+        ReadCallback read_cb;
+        WriteCallback write_cb;
+    };
+
+    EventBase *base;
+    int accept;
+    ConnectionListener *listener;
+    std::set<Connection*> connections;
+};
+
+void EchoServer::WriteCallback::error(std::runtime_error const&) {
+    delete conn;
+}
+
+void EchoServer::ReadCallback::available(wte::Buffer *buf) {
+    conn->stream->write(buf, &conn->write_cb);
+}
+
+void EchoServer::ReadCallback::eof() {
+    delete conn;
+}
+
+void EchoServer::ReadCallback::error(std::runtime_error const&) {
+    delete conn;
+}
 
 class StreamTest : public EventBaseTest {
 public:
@@ -41,7 +155,7 @@ public:
         bool errored = false;
     };
 
-    class TestReadCallback final : public Stream::ReadCallback {
+    class TestReadCallback : public Stream::ReadCallback {
     public:
         void available(Buffer *buf) override {
             total_read += buf->size();
@@ -60,13 +174,26 @@ public:
         bool hit_eof = false;
         bool errored = false;
     };
+
+    class TestConnectCallback final : public Stream::ConnectCallback {
+    public:
+        void complete() override {
+            completed = true;
+        }
+
+        void error(std::runtime_error const& e) override {
+            errored = true;
+        }
+        bool completed = false;
+        bool errored = false;
+    };
 };
 
 TEST_F(StreamTest, WritesRaiseCallbackOnCompletion) {
     TestWriteCallback cb1;
     TestWriteCallback cb2;
 
-    std::unique_ptr<Stream> stream(wrapFd(base, fds[0]));
+    auto stream = wrapFd(base, fds[0]);
 
     char buf[64];
     memset(buf, 'A', sizeof(buf));
@@ -89,8 +216,8 @@ TEST_F(StreamTest, LargeWrites) {
     TestWriteCallback wcb;
     TestReadCallback rcb;
 
-    std::unique_ptr<Stream> wstream(wrapFd(base, fds[0]));
-    std::unique_ptr<Stream> rstream(wrapFd(base, fds[1]));
+    auto wstream = wrapFd(base, fds[0]);
+    auto rstream = wrapFd(base, fds[1]);
 
     const int kLarge = 1 << 20; // "large"
     char *wbuf = new char[kLarge];
@@ -113,7 +240,7 @@ TEST_F(StreamTest, WriteErrorsRaiseCallback) {
     // whether that's expected behavior or not and need to check.
 #if !defined(_WIN32)
     TestWriteCallback cb;
-    std::unique_ptr<Stream> stream(wrapFd(base, fds[0]));
+    auto stream = wrapFd(base, fds[0]);
 
     char buf[64];
     memset(buf, 'A', sizeof(buf));
@@ -133,8 +260,8 @@ TEST_F(StreamTest, ReadableDataRaisesCallback) {
     TestWriteCallback wcb;
     TestReadCallback rcb;
 
-    std::unique_ptr<Stream> wstream(wrapFd(base, fds[0]));
-    std::unique_ptr<Stream> rstream(wrapFd(base, fds[1]));
+    auto wstream = wrapFd(base, fds[0]);
+    auto rstream = wrapFd(base, fds[1]);
 
     wstream->write("ping", 4, &wcb);
     rstream->startRead(&rcb);
@@ -149,13 +276,79 @@ TEST_F(StreamTest, ReadableDataRaisesCallback) {
 
 TEST_F(StreamTest, CloseRaisesEofCallback) {
     TestReadCallback rcb;
-    std::unique_ptr<Stream> rstream(wrapFd(base, fds[1]));
+    auto rstream = wrapFd(base, fds[1]);
     rstream->startRead(&rcb);
     rstream->close();
     ASSERT_TRUE(rcb.hit_eof);
 
     // prevent double-close
     fds[1] = -1;
+}
+
+TEST_F(StreamTest, TestConnect) {
+    EchoServer echo(base);
+
+    TestConnectCallback ccb;
+    auto stream = Stream::create(base);
+    stream->connect("127.0.0.1", echo.port(), &ccb);
+
+    // Nothing happens until we drive the loop
+    ASSERT_FALSE(ccb.completed);
+    ASSERT_FALSE(ccb.errored);
+
+    base->loop(EventBase::LoopMode::ONCE);
+
+    EXPECT_TRUE(ccb.completed);
+    EXPECT_FALSE(ccb.errored);
+}
+
+TEST_F(StreamTest, TestCloseBeforeConnect) {
+    EchoServer echo(base);
+
+    TestConnectCallback ccb;
+    auto stream = Stream::create(base);
+    stream->connect("127.0.0.1", echo.port(), &ccb);
+
+    // Close before connect
+    stream->close();
+
+    // Ensure that some event becomes "ready" on this loop-once call
+    echo.ensureEvent();
+
+    base->loop(EventBase::LoopMode::ONCE);
+
+    EXPECT_FALSE(ccb.completed);
+    EXPECT_TRUE(ccb.errored);
+}
+
+TEST_F(StreamTest, TestConnectWriteRead) {
+    EchoServer echo(base, /*accept count=*/ 1);
+
+    TestConnectCallback ccb;
+    auto stream = Stream::create(base);
+    stream->connect("127.0.0.1", echo.port(), &ccb);
+
+    TestWriteCallback wcb;
+    stream->write("ping", 4, &wcb);
+
+    class ReadOnceCallback : public TestReadCallback {
+    public:
+        explicit ReadOnceCallback(Stream *stream) : stream(stream) { }
+        void available(Buffer *buf) override {
+            this->TestReadCallback::available(buf);
+            stream->close();
+        }
+        Stream *stream;
+    };
+
+    ReadOnceCallback rcb(stream.get());
+    stream->startRead(&rcb);
+
+    base->loop(EventBase::LoopMode::UNTIL_EMPTY);
+
+    EXPECT_TRUE(ccb.completed);
+    EXPECT_TRUE(wcb.completed);
+    EXPECT_EQ(4, rcb.total_read);
 }
 
 } // wte namespace

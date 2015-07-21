@@ -286,12 +286,20 @@ void Buffer::append(const char *buf, size_t size) {
     return pImpl_->append(buf, size);
 }
 
+void Buffer::append(std::string const& buffer) {
+    return pImpl_->append(buffer.c_str(), buffer.size());
+}
+
 void Buffer::append(Buffer *buf) {
     return pImpl_->append(buf->pImpl_);
 }
 
 void Buffer::prepend(const char *buf, size_t size) {
     return pImpl_->prepend(buf, size);
+}
+
+void Buffer::prepend(std::string const& buffer) {
+    return pImpl_->prepend(buffer.c_str(), buffer.size());
 }
 
 void Buffer::prepend(Buffer *buf) {

@@ -25,6 +25,7 @@
 
 #include <sys/types.h>
 
+#include <string>
 #include <vector> // TODO: erg, not a stable interface...
 
 #include "wte/porting.h"
@@ -65,6 +66,9 @@ public:
      */
     void append(const char *buf, size_t size);
 
+    /** Appends data to the buffer. */
+    void append(std::string const& buffer);
+
     /**
      * Appends all the data from another buffer to this buffer.
      *
@@ -82,6 +86,9 @@ public:
      * @param size the input buffer size
      */
     void prepend(const char *buf, size_t size);
+
+    /** Prepends data to the buffer. */
+    void prepend(std::string const& buffer);
 
     /**
      * Prepends all the data from another buffer to this buffer.

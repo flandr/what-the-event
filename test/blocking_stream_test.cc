@@ -61,10 +61,6 @@ public:
         bool errored = false;
     };
 
-    std::unique_ptr<Stream> mkStream(int fd) {
-        return std::unique_ptr<Stream>(wrapFd(base, fd));
-    }
-
     bool received(BlockingStream &reader, const char *buf, size_t size) {
         char *readbuf = new char[size];
         int64_t nread = reader.read(readbuf, size);

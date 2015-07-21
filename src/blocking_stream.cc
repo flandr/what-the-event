@@ -37,7 +37,7 @@ BlockingStream::~BlockingStream() {
     if (close_) {
         // TODO: close
     }
-    delete stream_;
+    stream_.reset(nullptr);
     delete base_;
 }
 
