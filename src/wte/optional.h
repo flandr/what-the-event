@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#ifndef SRC_OPTIONAL_H_
-#define SRC_OPTIONAL_H_
+#ifndef WTE_OPTIONAL_H_
+#define WTE_OPTIONAL_H_
 
 #include <stdexcept>
 #include <utility>
@@ -31,11 +31,11 @@
 namespace wte {
 
 /** Dummy type for use in `optional_storage`. */
-struct dummy_t { };
+WTE_SYM struct dummy_t { };
 
 /** Storage for non-default-constructible types. */
 template<typename T>
-union optional_storage {
+WTE_SYM union optional_storage {
     dummy_t dummy;
     typename std::aligned_storage<sizeof(T),
         std::alignment_of<T>::value>::type value;
@@ -58,7 +58,7 @@ union optional_storage {
  * Oh, the lengths you'll go to not take a dependency on boost :/
  */
 template<typename T>
-class Optional {
+class WTE_SYM Optional {
 public:
     Optional();
     Optional(Optional &&);
@@ -163,4 +163,4 @@ T const& Optional<T>::value() const {
 
 } // wte namespace
 
-#endif // SRC_OPTIONAL_H_
+#endif // WTE_OPTIONAL_H_

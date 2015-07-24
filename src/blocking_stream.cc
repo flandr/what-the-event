@@ -24,8 +24,8 @@
 #include <cassert>
 #include <cstring>
 
-#include "optional.h"
 #include "wte/event_base.h"
+#include "wte/optional.h"
 #include "wte/stream.h"
 
 namespace wte {

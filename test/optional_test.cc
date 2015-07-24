@@ -22,7 +22,7 @@
 
 #include <gtest/gtest.h>
 
-#include "optional.h"
+#include "wte/optional.h"
 
 namespace wte {
 

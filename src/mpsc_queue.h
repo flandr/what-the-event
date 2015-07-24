@@ -26,7 +26,7 @@
 #include <atomic>
 
 #include "cache_aligned.h"
-#include "optional.h"
+#include "wte/optional.h"
 
 namespace wte {
 
