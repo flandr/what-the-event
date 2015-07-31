@@ -35,7 +35,7 @@ namespace wte {
 /**
  * Interface for an asynchronous data stream.
  */
-class WTE_SYM Stream {
+class Stream {
 public:
     class WTE_SYM Deleter {
     public:
@@ -52,7 +52,7 @@ public:
      * @param base the event base for stream IO
      * @return an unconnected stream
      */
-    static std::unique_ptr<Stream, Deleter> create(EventBase *base);
+    WTE_SYM static std::unique_ptr<Stream, Deleter> create(EventBase *base);
 
     virtual ~Stream() { }
 
