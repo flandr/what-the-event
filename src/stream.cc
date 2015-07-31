@@ -38,6 +38,7 @@
 
 #include <event2/util.h>
 
+#include "buffer-internal.h"
 #include "wte/buffer.h"
 #include "wte/event_base.h"
 #include "wte/event_handler.h"
@@ -102,7 +103,7 @@ private:
         WriteRequest(const char *buffer, size_t size, WriteCallback *cb);
         WriteRequest(Buffer *buf, WriteCallback *cb);
         ~WriteRequest();
-        Buffer buffer_;
+        BufferImpl buffer_;
         WriteCallback *callback_;
         WriteRequest *next_;
     };
@@ -138,7 +139,7 @@ private:
     } requests_;
     ReadCallback *readCallback_;
     ConnectCallback *connectCallback_;
-    Buffer readBuffer_;
+    BufferImpl readBuffer_;
 };
 
 void StreamImpl::SockHandler::ready(What event) NOEXCEPT {

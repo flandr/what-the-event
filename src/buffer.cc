@@ -31,10 +31,6 @@
 
 namespace wte {
 
-BufferImpl* BufferImpl::get(Buffer *buf) {
-    return buf->pImpl_;
-}
-
 size_t BufferImpl::InternalExtent::append(const char *buf, size_t size) {
     char *data = extent.data;
     size_t space = write_offset - extent.size;
@@ -154,7 +150,13 @@ void BufferImpl::append(const char *buf, size_t size) {
     size_ += size;
 }
 
-void BufferImpl::append(BufferImpl *o) {
+void BufferImpl::append(std::string const& buf) {
+    append(buf.c_str(), buf.size());
+}
+
+void BufferImpl::append(Buffer *orig) {
+    BufferImpl *o = static_cast<BufferImpl*>(orig);
+
     if (o->list_empty()) {
         return;
     }
@@ -187,7 +189,13 @@ void BufferImpl::prepend(const char *buf, size_t size) {
     size_ += size;
 }
 
-void BufferImpl::prepend(BufferImpl *o) {
+void BufferImpl::prepend(std::string const& buf) {
+    prepend(buf.c_str(), buf.size());
+}
+
+void BufferImpl::prepend(Buffer *orig) {
+    BufferImpl *o = static_cast<BufferImpl*>(orig);
+
     if (o->list_empty()) {
         return;
     }
@@ -282,70 +290,18 @@ void BufferImpl::peek(size_t size, std::vector<Extent> *extents) const {
     }
 }
 
-void Buffer::append(const char *buf, size_t size) {
-    return pImpl_->append(buf, size);
+Buffer::~Buffer() { }
+
+Buffer* Buffer::mkBuffer() {
+    return new BufferImpl();
 }
 
-void Buffer::append(std::string const& buffer) {
-    return pImpl_->append(buffer.c_str(), buffer.size());
+void Buffer::release(Buffer *buf) {
+    delete buf;
 }
 
-void Buffer::append(Buffer *buf) {
-    return pImpl_->append(buf->pImpl_);
+void Buffer::Deleter::operator()(Buffer *buf) {
+    delete buf;
 }
-
-void Buffer::prepend(const char *buf, size_t size) {
-    return pImpl_->prepend(buf, size);
-}
-
-void Buffer::prepend(std::string const& buffer) {
-    return pImpl_->prepend(buffer.c_str(), buffer.size());
-}
-
-void Buffer::prepend(Buffer *buf) {
-    return pImpl_->prepend(buf->pImpl_);
-}
-
-bool Buffer::empty() const {
-    return pImpl_->empty();
-}
-
-size_t Buffer::size() const {
-    return pImpl_->size();
-}
-
-void Buffer::reserve(size_t size) {
-    return pImpl_->reserve(size);
-}
-
-void Buffer::reserve(size_t size, std::vector<Extent> *extents) {
-    return pImpl_->reserve(size, extents);
-}
-
-void Buffer::drain(size_t size) {
-    pImpl_->drain(size);
-}
-
-void Buffer::read(char *buf, size_t size, size_t *nread) {
-    return pImpl_->read(buf, size, nread);
-}
-
-void Buffer::peek(char *buf, size_t size, size_t *nread) const {
-    return pImpl_->peek(buf, size, nread);
-}
-
-void Buffer::peek(size_t size, std::vector<Extent> *extents) const {
-    return pImpl_->peek(size, extents);
-}
-
-Buffer::~Buffer() {
-    delete pImpl_;
-}
-
-Buffer::Buffer(Buffer &&o) : pImpl_(o.pImpl_) {
-    o.pImpl_ = nullptr;
-}
-
-Buffer::Buffer() : pImpl_(new BufferImpl()) { }
 
 } // wte namespace
