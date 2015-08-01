@@ -99,7 +99,8 @@ public:
  * @param errorCallback the callback to be invoked on errors
  * @throws on error
  */
-WTE_SYM ConnectionListener* mkConnectionListener(EventBase *base,
+WTE_SYM ConnectionListener* mkConnectionListener(
+    std::shared_ptr<EventBase> base,
     std::function<void(int fd)> const& acceptCallback,
     std::function<void(std::exception const&)> errorCallback);
 

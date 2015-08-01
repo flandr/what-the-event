@@ -34,8 +34,8 @@ class EchoServer {
 public:
     struct Connection;
 
-    EchoServer(EventBase *base, int accept_count = -1) : base(base),
-            accept(accept_count) {
+    EchoServer(std::shared_ptr<EventBase> base, int accept_count = -1)
+            : base(base), accept(accept_count) {
         listener = mkConnectionListener(base, [this](int fd) -> void {
                 Connection *conn = new Connection(this, wrapFd(this->base, fd));
                 connections.insert(conn);
@@ -119,7 +119,7 @@ public:
         WriteCallback write_cb;
     };
 
-    EventBase *base;
+    std::shared_ptr<EventBase> base;
     int accept;
     ConnectionListener *listener;
     std::set<Connection*> connections;

@@ -42,7 +42,8 @@
 
 namespace wte {
 
-LibeventConnectionListener::LibeventConnectionListener(EventBase *base,
+LibeventConnectionListener::LibeventConnectionListener(
+        std::shared_ptr<EventBase> base,
         std::function<void(int)> const& acceptCallback,
         std::function<void(std::exception const&)> errorCallback)
     : base_(base), port_(0), acceptCallback_(acceptCallback),
@@ -167,7 +168,8 @@ void LibeventConnectionListener::stopAccepting() {
     base_->registerHandler(&handler_, What::NONE);
 }
 
-ConnectionListener* mkConnectionListener(EventBase *base,
+ConnectionListener* mkConnectionListener(
+        std::shared_ptr<EventBase> base,
         std::function<void(int)> const& acceptCallback,
         std::function<void(std::exception const&)> errorCallback) {
     return new LibeventConnectionListener(base, acceptCallback, errorCallback);

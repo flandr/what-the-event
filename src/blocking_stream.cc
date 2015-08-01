@@ -63,7 +63,7 @@ public:
      */
     int64_t read(char *buf, size_t size) override;
 private:
-    EventBase *base_;
+    std::shared_ptr<EventBase> base_;
     std::unique_ptr<Stream, Stream::Deleter> stream_;
     bool close_;
 };
@@ -76,7 +76,7 @@ BlockingStreamImpl::~BlockingStreamImpl() {
         // TODO: close
     }
     stream_.reset(nullptr);
-    delete base_;
+    base_.reset();
 }
 
 namespace {

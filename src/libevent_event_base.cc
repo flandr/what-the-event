@@ -543,8 +543,11 @@ void LibeventEventBase::registerHandlerInternal(EventHandler *handler,
     event_add(&impl->event_, /*timeout=*/ nullptr);
 }
 
-EventBase* mkEventBase() {
-    return new LibeventEventBase();
+std::shared_ptr<EventBase> mkEventBase() {
+    // Using an explicit deleter here ensures that the delete is performed
+    // by this library, avoiding cross-DLL delete issues on Windows.
+    return std::shared_ptr<EventBase>(
+        new LibeventEventBase(), std::default_delete<EventBase>());
 }
 
 } // wte namespace

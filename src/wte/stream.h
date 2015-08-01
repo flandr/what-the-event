@@ -52,7 +52,8 @@ public:
      * @param base the event base for stream IO
      * @return an unconnected stream
      */
-    WTE_SYM static std::unique_ptr<Stream, Deleter> create(EventBase *base);
+    WTE_SYM static std::unique_ptr<Stream, Deleter> create(
+        std::shared_ptr<EventBase> base);
 
     virtual ~Stream() { }
 
@@ -170,7 +171,8 @@ public:
 
 // TODO: temporary interface for testing. Must already be connected & set
 // to non-blocking mode.
-WTE_SYM std::unique_ptr<Stream, Stream::Deleter> wrapFd(EventBase *base, int fd);
+WTE_SYM std::unique_ptr<Stream, Stream::Deleter> wrapFd(
+    std::shared_ptr<EventBase> base, int fd);
 
 } // wte namespace
 

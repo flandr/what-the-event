@@ -52,7 +52,6 @@ public:
     ~EventBaseTest() {
         closepipe<0>();
         closepipe<1>();
-        delete base;
     }
 
     // Trading additional code emitted for avoiding parameter type screw-ups :P
@@ -66,7 +65,7 @@ public:
     }
 protected:
     evutil_socket_t fds[2]; // Directly depending on libevent utils
-    EventBase *base;
+    std::shared_ptr<EventBase> base;
 };
 
 } // namespace wte

@@ -66,11 +66,11 @@ inline bool isReadRetryable(int e) {
 class StreamImpl final : public Stream {
 public:
     // TODO: temporary fd-based constructor for testing
-    StreamImpl(EventBase *base, int fd) : handler_(this, fd),
+    StreamImpl(std::shared_ptr<EventBase> base, int fd) : handler_(this, fd),
         base_(base), requests_({nullptr, nullptr}), readCallback_(nullptr),
         connectCallback_(nullptr) { }
 
-    explicit StreamImpl(EventBase *base) : handler_(this, -1),
+    explicit StreamImpl(std::shared_ptr<EventBase> base) : handler_(this, -1),
         base_(base), requests_({nullptr, nullptr}), readCallback_(nullptr),
         connectCallback_(nullptr) { }
 
@@ -109,7 +109,7 @@ private:
     };
 
     SockHandler handler_;
-    EventBase *base_;
+    std::shared_ptr<EventBase> base_;
     struct Requests {
         WriteRequest *head;
         WriteRequest *tail;
@@ -420,12 +420,14 @@ void Stream::Deleter::operator()(Stream *stream) {
     delete stream;
 }
 
-std::unique_ptr<Stream, Stream::Deleter> wrapFd(EventBase *base, int fd) {
+std::unique_ptr<Stream, Stream::Deleter> wrapFd(std::shared_ptr<EventBase> base,
+        int fd) {
     return std::unique_ptr<Stream, Stream::Deleter>(
          new StreamImpl(base, fd), Stream::Deleter());
 }
 
-std::unique_ptr<Stream, Stream::Deleter> Stream::create(EventBase *base) {
+std::unique_ptr<Stream, Stream::Deleter> Stream::create(
+        std::shared_ptr<EventBase> base) {
     return std::unique_ptr<Stream, Stream::Deleter>(
          new StreamImpl(base), Stream::Deleter());
 }
