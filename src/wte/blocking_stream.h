@@ -32,17 +32,23 @@ namespace wte {
 class EventBase;
 
 /** Read/write stream with blocking operations. */
-class WTE_SYM BlockingStream {
+class BlockingStream {
 public:
+    BlockingStream() { }
+    virtual ~BlockingStream() { }
+
+    struct WTE_SYM Deleter {
+        void operator()(BlockingStream *);
+    };
+
     /**
      * Construct a blocking stream wrapper around an existing descriptor.
      *
      * @param fd the file descriptor
      * @param auto_close whether to close the descriptor on destruction
      */
-    explicit BlockingStream(int fd, bool auto_close);
-
-    ~BlockingStream();
+    static std::unique_ptr<BlockingStream, Deleter> create(int fd,
+        bool auto_close);
 
     /**
      * Writes the buffer into the stream, blocking if necessary.
@@ -51,7 +57,7 @@ public:
      * @param size the buffer length
      * @throws on error
      */
-    void write(const char *buf, size_t size);
+    virtual void write(const char *buf, size_t size) = 0;
 
     /**
      * Read up to the requested size, blocking if necessary.
@@ -63,11 +69,7 @@ public:
      * @return the number of bytes read
      * @throws on error
      */
-    int64_t read(char *buf, size_t size);
-private:
-    EventBase *base_;
-    std::unique_ptr<Stream, Stream::Deleter> stream_;
-    bool close_;
+    virtual int64_t read(char *buf, size_t size) = 0;
 };
 
 } // wte namespace

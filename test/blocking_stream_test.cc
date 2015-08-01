@@ -75,28 +75,28 @@ public:
 };
 
 TEST_F(BlockingStreamTest, ReadWrite) {
-    BlockingStream writer(fds[0], /*close=*/ false);
-    BlockingStream reader(fds[1], /*close=*/ false);
+    auto writer = BlockingStream::create(fds[0], /*close=*/ false);
+    auto reader = BlockingStream::create(fds[1], /*close=*/ false);
 
     char buf[64];
     memset(buf, 'A', sizeof(buf));
 
-    writer.write(buf, sizeof(buf));
-    ASSERT_TRUE(received(reader, buf, sizeof(buf)));
+    writer->write(buf, sizeof(buf));
+    ASSERT_TRUE(received(*reader, buf, sizeof(buf)));
 }
 
 TEST_F(BlockingStreamTest, ShortRead) {
-    BlockingStream writer(fds[0], /*close=*/ false);
-    BlockingStream reader(fds[1], /*close=*/ false);
+    auto writer = BlockingStream::create(fds[0], /*close=*/ false);
+    auto reader = BlockingStream::create(fds[1], /*close=*/ false);
 
     char wbuf[64];
     memset(wbuf, 'A', sizeof(wbuf));
-    writer.write(wbuf, sizeof(wbuf));
+    writer->write(wbuf, sizeof(wbuf));
 
     closepipe<0>();
 
     char rbuf[128];
-    int nread = reader.read(rbuf, sizeof(rbuf));
+    int nread = reader->read(rbuf, sizeof(rbuf));
     ASSERT_EQ(sizeof(wbuf), nread);
 }
 
