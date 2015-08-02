@@ -55,7 +55,7 @@ public:
     }
 
     ~EchoServer() {
-        delete listener;
+        listener.reset();
 
         for (auto* conn : connections) {
             conn->server = nullptr;
@@ -121,7 +121,7 @@ public:
 
     std::shared_ptr<EventBase> base;
     int accept;
-    ConnectionListener *listener;
+    std::shared_ptr<ConnectionListener> listener;
     std::set<Connection*> connections;
 };
 

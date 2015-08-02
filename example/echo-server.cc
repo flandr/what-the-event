@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
 #endif
 
     auto base = wte::mkEventBase();
-    auto* listener = wte::mkConnectionListener(base,
+    auto listener = wte::mkConnectionListener(base,
         std::bind(acceptCb, base, std::placeholders::_1), errorCb);
 
     listener->bind(0);
@@ -111,8 +111,6 @@ int main(int argc, char **argv) {
 
     printf("Ready to talk back on %d\n", listener->port());
     base->loop(wte::EventBase::LoopMode::FOREVER);
-
-    delete listener;
 
     return 0;
 }
