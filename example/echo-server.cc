@@ -52,7 +52,7 @@ private:
 };
 
 struct Connection {
-    Connection(wte::EventBase *base, int fd)
+    Connection(std::shared_ptr<wte::EventBase> base, int fd)
         : stream(wte::wrapFd(base, fd)),
           write_cb(this),
           read_cb(this, &write_cb) { }
@@ -84,7 +84,7 @@ void EchoReadCallback::error(std::runtime_error const& e) {
     delete conn_;
 }
 
-static void acceptCb(wte::EventBase *base, int fd) {
+static void acceptCb(std::shared_ptr<wte::EventBase> base, int fd) {
     Connection *conn = new Connection(base, fd);
     conn->stream->startRead(&conn->read_cb);
 }
@@ -101,8 +101,8 @@ int main(int argc, char **argv) {
     WSAStartup(version, &data);
 #endif
 
-    auto* base = wte::mkEventBase();
-    auto* listener = wte::mkConnectionListener(base,
+    auto base = wte::mkEventBase();
+    auto listener = wte::mkConnectionListener(base,
         std::bind(acceptCb, base, std::placeholders::_1), errorCb);
 
     listener->bind(0);
@@ -111,9 +111,6 @@ int main(int argc, char **argv) {
 
     printf("Ready to talk back on %d\n", listener->port());
     base->loop(wte::EventBase::LoopMode::FOREVER);
-
-    delete listener;
-    delete base;
 
     return 0;
 }

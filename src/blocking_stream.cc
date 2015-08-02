@@ -30,15 +30,53 @@
 
 namespace wte {
 
-BlockingStream::BlockingStream(int fd, bool auto_close)
+class BlockingStreamImpl final : public BlockingStream {
+public:
+    /**
+     * Construct a blocking stream wrapper around an existing descriptor.
+     *
+     * @param fd the file descriptor
+     * @param auto_close whether to close the descriptor on destruction
+     */
+    BlockingStreamImpl(int fd, bool auto_close);
+
+    ~BlockingStreamImpl();
+
+    /**
+     * Writes the buffer into the stream, blocking if necessary.
+     *
+     * @param buf the buffer
+     * @param size the buffer length
+     * @throws on error
+     */
+    void write(const char *buf, size_t size) override;
+
+    /**
+     * Read up to the requested size, blocking if necessary.
+     *
+     * May return short reads on EOF.
+     *
+     * @param buf the buffer
+     * @param size the buffer length
+     * @return the number of bytes read
+     * @throws on error
+     */
+    int64_t read(char *buf, size_t size) override;
+private:
+    std::shared_ptr<EventBase> base_;
+    std::unique_ptr<Stream, Stream::Deleter> stream_;
+    bool close_;
+};
+
+BlockingStreamImpl::BlockingStreamImpl(int fd, bool auto_close)
     : base_(mkEventBase()), stream_(wrapFd(base_, fd)), close_(auto_close) { }
 
-BlockingStream::~BlockingStream() {
+BlockingStreamImpl::~BlockingStreamImpl() {
     if (close_) {
         // TODO: close
     }
     stream_.reset(nullptr);
-    delete base_;
+    base_.reset();
 }
 
 namespace {
@@ -89,7 +127,7 @@ public:
 
 } // unnamed namespace
 
-void BlockingStream::write(const char *buf, size_t size) {
+void BlockingStreamImpl::write(const char *buf, size_t size) {
     BlockingWriteCallback cb;
     stream_->write(buf, size, &cb);
     base_->loop(EventBase::LoopMode::UNTIL_EMPTY);
@@ -99,7 +137,7 @@ void BlockingStream::write(const char *buf, size_t size) {
     assert(cb.complete_);
 }
 
-int64_t BlockingStream::read(char *buf, size_t size) {
+int64_t BlockingStreamImpl::read(char *buf, size_t size) {
     BlockingReadCallback cb(buf, size);
     stream_->startRead(&cb);
 
@@ -112,6 +150,16 @@ int64_t BlockingStream::read(char *buf, size_t size) {
     }
 
     return cb.nread_;
+}
+
+void BlockingStream::Deleter::operator()(BlockingStream *bs) {
+    delete bs;
+}
+
+std::unique_ptr<BlockingStream, BlockingStream::Deleter>
+BlockingStream::create(int fd, bool auto_close) {
+    return std::unique_ptr<BlockingStream, Deleter>(
+        new BlockingStreamImpl(fd, auto_close), Deleter());
 }
 
 } // wte namespace

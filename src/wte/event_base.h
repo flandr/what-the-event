@@ -22,6 +22,7 @@
 #define WTE_EVENT_BASE_H_
 
 #include <functional>
+#include <memory>
 
 #include "wte/porting.h"
 #include "wte/what.h"
@@ -31,7 +32,7 @@ namespace wte {
 class EventHandler;
 class Timeout;
 
-class WTE_SYM EventBase {
+class EventBase {
 public:
     enum class LoopMode {
         /** Process active events and return. */
@@ -131,7 +132,7 @@ public:
 };
 
 /** @return a new event base. */
-WTE_SYM EventBase *mkEventBase();
+WTE_SYM std::shared_ptr<EventBase> mkEventBase();
 
 } // wte namespace
 

@@ -23,6 +23,7 @@
 
 #include <cinttypes>
 #include <functional>
+#include <memory>
 
 #include "wte/event_base.h"
 #include "wte/porting.h"
@@ -43,7 +44,7 @@ namespace wte {
  * `startAccepting` are invoked, and the event base is driven by its
  * `loop` method.
  */
-class WTE_SYM ConnectionListener {
+class ConnectionListener {
 public:
     virtual ~ConnectionListener() { }
 
@@ -99,7 +100,8 @@ public:
  * @param errorCallback the callback to be invoked on errors
  * @throws on error
  */
-WTE_SYM ConnectionListener* mkConnectionListener(EventBase *base,
+WTE_SYM std::shared_ptr<ConnectionListener> mkConnectionListener(
+    std::shared_ptr<EventBase> base,
     std::function<void(int fd)> const& acceptCallback,
     std::function<void(std::exception const&)> errorCallback);
 

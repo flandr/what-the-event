@@ -38,9 +38,8 @@ public:
 
 protected:
     template<typename... Params>
-    std::unique_ptr<ConnectionListener> mkListener(Params... params) {
-        return std::unique_ptr<ConnectionListener>(
-            mkConnectionListener(std::forward<Params>(params)...));
+    std::shared_ptr<ConnectionListener> mkListener(Params... params) {
+        return mkConnectionListener(std::forward<Params>(params)...);
     }
 
     std::function<void(int)> mkAccept() {

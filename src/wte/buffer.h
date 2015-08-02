@@ -25,6 +25,7 @@
 
 #include <sys/types.h>
 
+#include <memory>
 #include <string>
 #include <vector> // TODO: erg, not a stable interface...
 
@@ -32,14 +33,14 @@
 
 namespace wte {
 
-class BufferImpl;
-
 /** A contiguous extent of data. */
 struct WTE_SYM Extent {
     /** Size of the buffer in `data`. */
     size_t size;
     char *data;
 };
+
+class BufferImpl;
 
 /**
  * Buffer for aggregating data.
@@ -50,11 +51,9 @@ struct WTE_SYM Extent {
  *
  * Methods that allocate memory can throw std::bad_alloc.
  */
-class WTE_SYM Buffer {
+class Buffer {
 public:
-    Buffer();
-    ~Buffer();
-    Buffer(Buffer&&);
+    virtual ~Buffer();
     Buffer(Buffer const&) = delete;
     Buffer& operator=(Buffer const&) = delete;
 
@@ -64,10 +63,10 @@ public:
      * @param buf the input buffer
      * @param size the input buffer size
      */
-    void append(const char *buf, size_t size);
+    virtual void append(const char *buf, size_t size) = 0;
 
     /** Appends data to the buffer. */
-    void append(std::string const& buffer);
+    virtual void append(std::string const& buffer) = 0;
 
     /**
      * Appends all the data from another buffer to this buffer.
@@ -77,7 +76,7 @@ public:
      *
      * @param buf the input buffer
      */
-    void append(Buffer *buffer);
+    virtual void append(Buffer *buffer) = 0;
 
     /**
      * Prepends data to the buffer.
@@ -85,10 +84,10 @@ public:
      * @param buf the input buffer
      * @param size the input buffer size
      */
-    void prepend(const char *buf, size_t size);
+    virtual void prepend(const char *buf, size_t size) = 0;
 
     /** Prepends data to the buffer. */
-    void prepend(std::string const& buffer);
+    virtual void prepend(std::string const& buffer) = 0;
 
     /**
      * Prepends all the data from another buffer to this buffer.
@@ -98,7 +97,7 @@ public:
      *
      * @param buf the input buffer
      */
-    void prepend(Buffer *buffer);
+    virtual void prepend(Buffer *buffer) = 0;
 
     /**
      * Copy data out of the buffer, consuming it.
@@ -110,7 +109,7 @@ public:
      * @param size number of bytes to read
      * @param nread number of bytes read
      */
-    void read(char *buf, size_t size, size_t *nread);
+    virtual void read(char *buf, size_t size, size_t *nread) = 0;
 
     /**
      * Like `read`, but does not consume data in the buffer.
@@ -122,7 +121,7 @@ public:
      * @param size number of bytes to read
      * @param nread number of bytes read
      */
-    void peek(char *buf, size_t size, size_t *nread) const;
+    virtual void peek(char *buf, size_t size, size_t *nread) const = 0;
 
     /**
      * Peek at up to `size` bytes, possibly discongiguous.
@@ -130,7 +129,7 @@ public:
      * @param size number of bytes to read
      * @param extents vector of 0 or more `Extents` containing pointers to data
      */
-    void peek(size_t size, std::vector<Extent> *extents) const;
+    virtual void peek(size_t size, std::vector<Extent> *extents) const = 0;
 
     /**
      * Consume up to `size` bytes of the buffer without reading.
@@ -140,20 +139,20 @@ public:
      *
      * @param size maximum bytes to consumer
      */
-    void drain(size_t size);
+    virtual void drain(size_t size) = 0;
 
     /** @return whether the buffer is empty. */
-    bool empty() const;
+    virtual bool empty() const = 0;
 
     /** @return the total amount of data in the buffer. */
-    size_t size() const;
+    virtual size_t size() const = 0;
 
     /**
      * Reserve at least `size` bytes of space in the buffer.
      *
      * @param size the space to reserve
      */
-    void reserve(size_t size);
+    virtual void reserve(size_t size) = 0;
 
     /**
      * Reserve at least `size` bytes of space in the buffer, returning 1 or
@@ -162,10 +161,21 @@ public:
      * @param size the space to reserve
      * @param extents the reserved extents
      */
-    void reserve(size_t size, std::vector<Extent> *extents);
+    virtual void reserve(size_t size, std::vector<Extent> *extents) = 0;
+
+    struct WTE_SYM Deleter {
+        void operator()(Buffer *buf);
+    };
+
+    static std::unique_ptr<Buffer, Deleter> create() {
+        return std::unique_ptr<Buffer, Deleter>(mkBuffer());
+    }
 private:
-    BufferImpl *pImpl_;
+    Buffer() { }
     friend class BufferImpl;
+
+    WTE_SYM static Buffer* mkBuffer();
+    WTE_SYM static void release(Buffer *);
 };
 
 } // wte namespace

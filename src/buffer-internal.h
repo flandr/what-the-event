@@ -29,32 +29,34 @@
 
 namespace wte {
 
-class BufferImpl {
+class BufferImpl final : public Buffer {
 public:
     BufferImpl();
     ~BufferImpl();
 
-    void append(const char *buf, size_t size);
-    void append(BufferImpl *o);
-    void prepend(const char *buf, size_t size);
-    void prepend(BufferImpl *o);
+    void append(const char *buf, size_t size) override;
+    void append(std::string const& buf) override;
+    void append(Buffer *o) override;
+    void prepend(const char *buf, size_t size) override;
+    void prepend(std::string const& buf) override;
+    void prepend(Buffer *o) override;
 
     // Copy data out, consuming in the process
-    void read(char *buf, size_t size, size_t *nread);
+    void read(char *buf, size_t size, size_t *nread) override;
 
     // Copy data out, without consuming
-    void peek(char *buf, size_t size, size_t *nread) const;
+    void peek(char *buf, size_t size, size_t *nread) const override;
 
     // Peek at data without consuming, using extents
-    void peek(size_t size, std::vector<Extent> *extents) const;
+    void peek(size_t size, std::vector<Extent> *extents) const override;
 
     // Drain data
-    void drain(size_t count);
+    void drain(size_t count) override;
 
-    bool empty() const;
-    size_t size() const { return size_; }
-    void reserve(size_t capacity);
-    void reserve(size_t capacity, std::vector<Extent> *extents);
+    bool empty() const override;
+    size_t size() const override { return size_; }
+    void reserve(size_t capacity) override;
+    void reserve(size_t capacity, std::vector<Extent> *extents) override;
 
     struct InternalExtent {
         Extent extent;
@@ -93,8 +95,6 @@ public:
         size_t copyout(char *buf, size_t size);
         size_t consume(size_t size);
     };
-
-    static BufferImpl* get(Buffer *buf);
 private:
     bool list_empty() const;
     void read(char *buf, size_t size, size_t *nread, bool consume);

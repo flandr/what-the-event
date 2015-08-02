@@ -32,7 +32,7 @@ namespace wte {
 // here. Consider making generic, like Stream.
 class LibeventConnectionListener final : public ConnectionListener {
 public:
-    LibeventConnectionListener(EventBase *loop,
+    LibeventConnectionListener(std::shared_ptr<EventBase> loop,
         std::function<void(int)> const& acceptCallback,
         std::function<void(std::exception const&)> errorCallback);
     ~LibeventConnectionListener();
@@ -53,7 +53,7 @@ private:
         LibeventConnectionListener *listener_;
     };
 
-    EventBase *base_;
+    std::shared_ptr<EventBase> base_;
     uint16_t port_;
     std::function<void(int)> acceptCallback_;
     std::function<void(std::exception const&)> errorCallback_;

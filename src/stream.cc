@@ -38,6 +38,7 @@
 
 #include <event2/util.h>
 
+#include "buffer-internal.h"
 #include "wte/buffer.h"
 #include "wte/event_base.h"
 #include "wte/event_handler.h"
@@ -65,11 +66,11 @@ inline bool isReadRetryable(int e) {
 class StreamImpl final : public Stream {
 public:
     // TODO: temporary fd-based constructor for testing
-    StreamImpl(EventBase *base, int fd) : handler_(this, fd),
+    StreamImpl(std::shared_ptr<EventBase> base, int fd) : handler_(this, fd),
         base_(base), requests_({nullptr, nullptr}), readCallback_(nullptr),
         connectCallback_(nullptr) { }
 
-    explicit StreamImpl(EventBase *base) : handler_(this, -1),
+    explicit StreamImpl(std::shared_ptr<EventBase> base) : handler_(this, -1),
         base_(base), requests_({nullptr, nullptr}), readCallback_(nullptr),
         connectCallback_(nullptr) { }
 
@@ -102,13 +103,13 @@ private:
         WriteRequest(const char *buffer, size_t size, WriteCallback *cb);
         WriteRequest(Buffer *buf, WriteCallback *cb);
         ~WriteRequest();
-        Buffer buffer_;
+        BufferImpl buffer_;
         WriteCallback *callback_;
         WriteRequest *next_;
     };
 
     SockHandler handler_;
-    EventBase *base_;
+    std::shared_ptr<EventBase> base_;
     struct Requests {
         WriteRequest *head;
         WriteRequest *tail;
@@ -138,7 +139,7 @@ private:
     } requests_;
     ReadCallback *readCallback_;
     ConnectCallback *connectCallback_;
-    Buffer readBuffer_;
+    BufferImpl readBuffer_;
 };
 
 void StreamImpl::SockHandler::ready(What event) NOEXCEPT {
@@ -419,12 +420,14 @@ void Stream::Deleter::operator()(Stream *stream) {
     delete stream;
 }
 
-std::unique_ptr<Stream, Stream::Deleter> wrapFd(EventBase *base, int fd) {
+std::unique_ptr<Stream, Stream::Deleter> wrapFd(std::shared_ptr<EventBase> base,
+        int fd) {
     return std::unique_ptr<Stream, Stream::Deleter>(
          new StreamImpl(base, fd), Stream::Deleter());
 }
 
-std::unique_ptr<Stream, Stream::Deleter> Stream::create(EventBase *base) {
+std::unique_ptr<Stream, Stream::Deleter> Stream::create(
+        std::shared_ptr<EventBase> base) {
     return std::unique_ptr<Stream, Stream::Deleter>(
          new StreamImpl(base), Stream::Deleter());
 }
