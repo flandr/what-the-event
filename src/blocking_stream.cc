@@ -73,7 +73,7 @@ BlockingStreamImpl::BlockingStreamImpl(int fd, bool auto_close)
 
 BlockingStreamImpl::~BlockingStreamImpl() {
     if (close_) {
-        // TODO: close
+        stream_->close();
     }
     stream_.reset(nullptr);
     base_.reset();
