@@ -253,8 +253,8 @@ void LibeventEventBase::loop(LoopMode mode) {
         // Enqueue a persistent event for versions of libevent that
         // don't support EVLOOP_NO_EXIT_ON_EMPTY
         static struct timeval tv = { 3600, 0 };
-        event_assign(&persistent_timer, base_, -1, 0, persistentTimerCb,
-            nullptr);
+        event_assign(&persistent_timer, base_, -1, EV_PERSIST,
+            persistentTimerCb, nullptr);
         if (0 != event_add(&persistent_timer, &tv)) {
             throw std::runtime_error("Internal error starting loop");
         }
