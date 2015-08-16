@@ -53,6 +53,8 @@ add_dependencies(${WhatTheEvent_STATIC_LIBRARY} libevent_ext)
 
 if(WIN32)
    set(EXTRA_LIBS ws2_32)
+   # Combine the static libevent library into the static wte library
+   set_target_properties(wte_s PROPERTIES STATIC_LIBRARY_FLAGS ${LibEvent_LIBRARY})
 endif(WIN32)
 
 # Link dependencies
