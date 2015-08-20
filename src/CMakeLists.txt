@@ -63,6 +63,11 @@ target_link_libraries(${WhatTheEvent_SHARED_LIBRARY}
     ${EXTRA_LIBS}
 )
 
+set_target_properties(${WhatTheEvent_SHARED_LIBRARY} PROPERTIES VERSION
+    ${WhatTheEvent_VERSION})
+set_target_properties(${WhatTheEvent_SHARED_LIBRARY} PROPERTIES SOVERSION
+    ${WhatTheEvent_MAJOR_VERSION})
+
 # Installation
 install(TARGETS
     ${WhatTheEvent_SHARED_LIBRARY}

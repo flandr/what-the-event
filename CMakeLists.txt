@@ -3,6 +3,12 @@ project(what-the-event CXX)
 # Required CMake version
 cmake_minimum_required(VERSION 2.8)
 
+set (WhatTheEvent_MAJOR_VERSION 0)
+set (WhatTheEvent_MINOR_VERSION 1)
+set (WhatTheEvent_PATCH_VERSION 0)
+set (WhatTheEvent_VERSION
+    ${WhatTheEvent_MAJOR_VERSION}.${WhatTheEvent_MINOR_VERSION}.${WhatTheEvent_PATCH_VERSION})
+
 # Module search path
 set(CMAKE_MODULE_PATH
     ${CMAKE_SOURCE_DIR}/cmake
@@ -34,3 +40,17 @@ if(BUILD_TESTS)
     include(External_gtest)
     add_subdirectory(test)
 endif()
+
+# Packaging
+set (CPACK_PACKAGE_NAME libwte-dev)
+set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "C++-friendly wrapper library for libevent")
+set (CPACK_PACKAGE_VERSION_MAJOR ${WhatTheEvent_MAJOR_VERSION})
+set (CPACK_PACKAGE_VERSION_MINOR ${WhatTheEvent_MINOR_VERSION})
+set (CPACK_PACKAGE_VERSION_PATCH ${WhatTheEvent_PATCH_VERSION})
+set (CPACK_PACKAGE_VERSION ${WhatTheEvent_VERSION})
+
+set (CPACK_GENERATOR "DEB")
+set (CPACK_DEBIAN_PACKAGE_MAINTAINER "Nate Rosenblum <flander@gmail.com>")
+set (CPACK_DEBIAN_PACKAGE_DEPENDS "libevent-2.0-5")
+
+include (CPack)
