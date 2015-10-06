@@ -1,6 +1,8 @@
 set(_source "${CMAKE_SOURCE_DIR}/third_party/gtest")
 set(_build "${CMAKE_CURRENT_BINARY_DIR}/gtest")
 
+if (NOT TARGET gtest_ext)
+
 ExternalProject_Add(gtest_ext
     SOURCE_DIR ${_source}
     BINARY_DIR ${_build}
@@ -9,5 +11,7 @@ ExternalProject_Add(gtest_ext
     INSTALL_COMMAND ""
 )
 
-include_directories("${_source}/include")
+set(gtest_INCLUDE_DIRS "${_source}/include")
 link_directories("${_build}")
+
+endif ()

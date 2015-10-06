@@ -2,7 +2,7 @@ project(what-the-event-library CXX)
 
 # Define the public include directories
 set(WhatTheEvent_PUBLIC_INCLUDE_DIRS
-    ${CMAKE_SOURCE_DIR}/wte
+    ${CMAKE_CURRENT_SOURCE_DIR}
     CACHE INTERNAL "what-the-event public include directories"
 )
 

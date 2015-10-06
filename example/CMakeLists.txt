@@ -2,8 +2,7 @@ project(tests CXX)
 
 # Set includes
 include_directories(
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/test
+    ${WhatTheEvent_PUBLIC_INCLUDE_DIRS}
     ${gtest_INCLUDE_DIRS}
 )
 
@@ -12,7 +11,7 @@ add_executable(echo-server
 )
 
 target_link_libraries(echo-server
-    wte
+    ${WhatTheEvent_SHARED_LIBRARY}
 )
 
 if(NOT WIN32)
